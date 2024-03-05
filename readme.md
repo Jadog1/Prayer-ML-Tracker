@@ -5,10 +5,11 @@ This project uses NLP in a few different ways to automate and assist leading som
 This is still an active work in progress!
 
 In specific, this project uses NLP to:
-- Link prayer requests to hisorical prayer requests for an automated way of keeping track of prayeers.
+- Link prayer requests to hisorical prayer requests for an automated way of keeping track of prayers.
 - Link prayer requests to bible verses for a daily verse.
 - Link prayer requests to GotQuestions
 - Use sentimental analysis to track how a person is doing over time.
+- Use survival analysis to track attendence (I could also just do a time series here -- TBD)
 
 
 ## Ideas
