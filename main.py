@@ -1,16 +1,14 @@
 from dotenv import load_dotenv
 from fastapi import FastAPI
-from src.repo.prayerRequests import PrayerRequestRepoImpl, OpenPGPool
-import os
-
-pg_uri = os.environ.get('PRAYERS_PG_DATABASE_URL')
-
+from src.routers.prayerRequests import prayerRequestRouter
 
 load_dotenv()
 
 app = FastAPI()
-prayer_request_repo = PrayerRequestRepoImpl(OpenPGPool(pg_uri))
+
+app.include_router(prayerRequestRouter, prefix="/prayerRequests")
 
 @app.get("/")
 async def root():
     return {"message": "Hello World"}
+

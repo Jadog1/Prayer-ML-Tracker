@@ -1,9 +1,9 @@
 from abc import ABC, abstractmethod
-import pandas as pd
 from ..data.prayerRequests import PrayerRequest, PrayerRequests
-import psycopg
-import psycopg_pool
-from psycopg.rows import dict_row, DictRow
+from typing import List
+from sqlalchemy import create_engine
+from sqlalchemy.orm import scoped_session, sessionmaker, Session
+from .orm import Base, PrayerRequestORM as ORMPrayerRequest
 
 class PrayerRequestRepo(ABC):
     @abstractmethod
@@ -21,69 +21,34 @@ class PrayerRequestRepo(ABC):
     @abstractmethod
     def save(self, account_id:int, prayerRequests: PrayerRequests):
         pass
-
+        
 class PrayerRequestRepoImpl(PrayerRequestRepo):
-    def __init__(self, pool: psycopg_pool.pool.ConnectionPool):
-        self.pool = pool
+    def __init__(self, session: scoped_session[Session]):
+        self.pool = session
 
     def get_all(self, account_id:int)->PrayerRequests:
-        with self.pool.connection() as conn, conn.cursor(row_factory=dict_row) as cursor:
-            query = f"""
-            SELECT {self._expected_select()}
-            FROM prayer_request pr
-            INNER JOIN account u ON pr.account_id = u.id
-            INNER JOIN contact c on pr.contact_id = c.id
-            WHERE pr.account_id = %s
-            """
-            cursor.execute(query, (account_id,))
-            return self._fetch_expected_select(cursor)
-        
+        with self.pool() as session:
+            requests = session.query(ORMPrayerRequest).filter(ORMPrayerRequest.account_id == account_id).all()
+            return self._to_prayer_requests(requests)
+
     def get_contact(self, account_id:int, contact_id: int)->PrayerRequests:
-        with self.pool.connection() as conn, conn.cursor(row_factory=dict_row) as cursor:
-            query = f"""
-            SELECT {self._expected_select()}
-            FROM prayer_request pr
-            INNER JOIN account u ON pr.account_id = u.id
-            INNER JOIN contact c on pr.contact_id = c.id
-            WHERE pr.account_id = %s AND pr.contact_id = %s
-            """
-            cursor.execute(query, (account_id, contact_id))
-            return self._fetch_expected_select(cursor)
+        with self.pool() as session:
+            requests = session.query(ORMPrayerRequest).filter(ORMPrayerRequest.account_id == account_id, ORMPrayerRequest.contact_id == contact_id).all()
+            return self._to_prayer_requests(requests)
 
     def get_daterange(self, account_id:int, start:str, end:str)->PrayerRequests:
-        with self.pool.connection() as conn, conn.cursor(row_factory=dict_row) as cursor:
-            query = f"""
-            SELECT {self._expected_select()}
-            FROM prayer_request pr
-            INNER JOIN account u ON pr.account_id = u.id
-            INNER JOIN contact c on pr.contact_id = c.id
-            WHERE pr.account_id = %s AND pr.created_at >= %s AND pr.created_at <= %s
-            """
-            cursor.execute(query, (account_id, start, end))
-            return self._fetch_expected_select(cursor)
-        
-    def _expected_select(self):
-        return "pr.account_id, pr.contact_id, pr.request, pr.archived_at"
-    
-    def _fetch_expected_select(self, cursor: psycopg.Cursor[DictRow])->PrayerRequests:
-        requests = PrayerRequests()
-        for row in cursor.fetchall():
-            request = PrayerRequest(row["account_id"], row["contact_id"], row["request"], row["archived_at"])
-            requests.add(request)
-        return requests
-
+        with self.pool() as session:
+            requests = session.query(ORMPrayerRequest).filter(ORMPrayerRequest.account_id == account_id, ORMPrayerRequest.created_at >= start, ORMPrayerRequest.created_at <= end).all()
+            return self._to_prayer_requests(requests)
 
     def save(self, account_id:int, prayerRequests: PrayerRequests):
-        with self.pool.connection() as conn, conn.cursor(row_factory=dict_row) as cursor:
+        with self.pool() as session:
             for request in prayerRequests.requests:
-                query = """
-                INSERT INTO prayer_request (account_id, contact_id, request, archived_at)
-                VALUES (%s, %s, %s, %s, %s)
-                """
-                cursor.execute(query, (account_id, request.contact_id, request.request, request.archived_at))
+                session.add(ORMPrayerRequest(account_id=account_id, contact_id=request.contact_id, request=request.request, archived_at=request.archived_at))
+            session.commit()
 
-            return 
-
-
-def OpenPGPool(uri: str)->psycopg_pool.pool.ConnectionPool:
-    return psycopg_pool.pool.ConnectionPool(conninfo=uri)
+    def _to_prayer_requests(self, requests: List[ORMPrayerRequest])->PrayerRequests:
+        prayer_requests = PrayerRequests()
+        for request in requests:
+            prayer_requests.add(PrayerRequest(request))
+        return prayer_requests
