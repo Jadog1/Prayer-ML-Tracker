@@ -36,3 +36,6 @@ class PrayerRequests():
             rows.append(prayer.to_dict())
         
         return pd.DataFrame(rows)
+    
+    def to_list(self):
+        return [prayer.to_dict() for prayer in self.prayerRequests]
