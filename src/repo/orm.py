@@ -16,10 +16,12 @@ class PrayerRequestORM(Base):
     updated_at: Mapped[datetime.datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.current_timestamp())
     contact_id: Mapped[int] = mapped_column(ForeignKey("contact.id"), nullable=False)
     archived_at: Mapped[datetime.datetime] = mapped_column(DateTime(timezone=True))
+    link_id: Mapped[int] = mapped_column(ForeignKey("link.id"), nullable=True)
 
     # Foreign key relationships
     account: Mapped["AccountORM"] = relationship(back_populates="prayer_requests")
     contact: Mapped["ContactORM"] = relationship(back_populates="prayer_requests")
+    link: Mapped["LinkORM"] = relationship(back_populates="prayer_requests")
 
 class ContactORM(Base):
     __tablename__ = 'contact'
@@ -28,7 +30,7 @@ class ContactORM(Base):
     name: Mapped[str] = mapped_column(String(collation='pg_catalog."default"'), nullable=False)
     description: Mapped[str] = mapped_column(String(collation='pg_catalog."default"'), nullable=True)
     account_id: Mapped[int] = mapped_column(ForeignKey("account.id"), nullable=False)
-    group_id: Mapped[int] = mapped_column(ForeignKey("group.id"), nullable=True)
+    group_id: Mapped[int] = mapped_column(ForeignKey("contact_group.id"), nullable=True)
 
     # Relationships
     prayer_requests: Mapped[List["PrayerRequestORM"]] = relationship(back_populates="contact")
@@ -47,7 +49,7 @@ class AccountORM(Base):
     groups: Mapped[List["GroupORM"]] = relationship(back_populates="account")
 
 class GroupORM(Base):
-    __tablename__ = 'group'
+    __tablename__ = 'contact_group'
 
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(collation='pg_catalog."default"'), nullable=False)
@@ -56,6 +58,14 @@ class GroupORM(Base):
     # Relationships
     account: Mapped["AccountORM"] = relationship(back_populates="groups")
     contacts: Mapped[List["ContactORM"]] = relationship(back_populates="group")
+
+class LinkORM(Base):
+    __tablename__ = 'link'
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+
+    # Relationships
+    prayer_requests: Mapped[List["PrayerRequestORM"]] = relationship(back_populates="link")
 
 
 def OpenPool(pg_uri: str)->scoped_session[Session]:

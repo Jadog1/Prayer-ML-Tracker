@@ -26,3 +26,6 @@ class Accounts():
             rows.append(account.to_dict())
         
         return pd.DataFrame(rows)
+    
+    def to_list(self):
+        return [account.to_dict() for account in self.accounts]
