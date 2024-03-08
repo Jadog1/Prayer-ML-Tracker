@@ -11,6 +11,14 @@ In specific, this project uses NLP to:
 - Use sentimental analysis to track how a person is doing over time.
 - Use survival analysis to track attendence (I could also just do a time series here -- TBD)
 
+## Running the Project
+
+Use the following command to run the project:
+
+```bash
+python -m uvicorn main:app --reload
+```
+
 
 ## Ideas
 
