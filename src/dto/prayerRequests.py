@@ -5,6 +5,7 @@ from src.repo.orm import PrayerRequestORM
 class PrayerRequest():
     def __init__(self, prayerRequest: PrayerRequestORM = None):
         if prayerRequest:
+            self.id = prayerRequest.id
             self.account_id = prayerRequest.account_id
             self.contact_id = prayerRequest.contact_id
             self.group_id = prayerRequest.contact.group_id if prayerRequest.contact else None
@@ -23,7 +24,8 @@ class PrayerRequest():
             'archived_at': self.archived_at,
             'name': self.name,
             'group': self.group,
-            'link_id': self.link_id
+            'link_id': self.link_id,
+            'id': self.id,
         }
     
     def from_dict(self, data: dict)->'PrayerRequest':
@@ -32,6 +34,7 @@ class PrayerRequest():
         self.request = data.get('request')
         self.archived_at = data.get('archived_at')
         self.link_id = data.get('link_id')
+        self.id = data.get('id')
         return self
 
 class PrayerRequests():

@@ -8,14 +8,16 @@ from dotenv import load_dotenv
 from src.repo.orm import OpenPool
 from src.repo.contacts import ContactRepoImpl
 from src.repo.prayerRequests import PrayerRequestRepoImpl
+from src.models.models import Embeddings
 
 load_dotenv()
 pg_uri = os.environ.get('PRAYERS_PG_DATABASE_URL')
 
+embedding_model = Embeddings()
 class Repositories:
     def __init__(self, pg_uri):
         pool = OpenPool(pg_uri)
-        self.prayer_request_repo = PrayerRequestRepoImpl(pool)
+        self.prayer_request_repo = PrayerRequestRepoImpl(pool, embedding_model)
         self.contact_repo = ContactRepoImpl(pool)
         self.pool = pool
 
@@ -26,7 +28,7 @@ repositories = Repositories(pg_uri)
 
 app = FastAPI()
 
-prayerRequestRoute = PrayerRequestRoute(repositories.prayer_request_repo)
+prayerRequestRoute = PrayerRequestRoute(repositories.prayer_request_repo, embedding_model)
 app.include_router(prayerRequestRoute.router, prefix="/prayerRequests")
 
 contactRoute = ContactRoute(repositories.contact_repo)

@@ -2,6 +2,7 @@ import datetime
 from typing import List
 from sqlalchemy import create_engine, String, ForeignKey, func, DateTime
 from sqlalchemy.orm import relationship, scoped_session, sessionmaker, Mapped, mapped_column, DeclarativeBase, Session
+from pgvector.sqlalchemy import Vector
 
 class Base(DeclarativeBase):
     pass
@@ -17,6 +18,8 @@ class PrayerRequestORM(Base):
     contact_id: Mapped[int] = mapped_column(ForeignKey("contact.id"), nullable=False)
     archived_at: Mapped[datetime.datetime] = mapped_column(DateTime(timezone=True))
     link_id: Mapped[int] = mapped_column(ForeignKey("link.id"), nullable=True)
+    gte_base_embedding: Mapped[Vector] = mapped_column(Vector(768), nullable=True)
+    msmarco_base_embedding: Mapped[Vector] = mapped_column(Vector(768), nullable=True)
 
     # Foreign key relationships
     account: Mapped["AccountORM"] = relationship(back_populates="prayer_requests")
@@ -40,7 +43,7 @@ class ContactORM(Base):
 class AccountORM(Base):
     __tablename__ = 'account'
 
-    id: Mapped[int] = mapped_column(primary_key=True)
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(String(collation='pg_catalog."default"'), nullable=False)
 
     # Relationships
@@ -51,7 +54,7 @@ class AccountORM(Base):
 class GroupORM(Base):
     __tablename__ = 'contact_group'
 
-    id: Mapped[int] = mapped_column(primary_key=True)
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(String(collation='pg_catalog."default"'), nullable=False)
     account_id: Mapped[int] = mapped_column(ForeignKey("account.id"), nullable=False)
 
@@ -62,7 +65,7 @@ class GroupORM(Base):
 class LinkORM(Base):
     __tablename__ = 'link'
 
-    id: Mapped[int] = mapped_column(primary_key=True)
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
 
     # Relationships
     prayer_requests: Mapped[List["PrayerRequestORM"]] = relationship(back_populates="link")

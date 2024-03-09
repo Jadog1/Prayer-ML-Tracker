@@ -1,0 +1,2 @@
+docker exec -t 4c54c78c92ecfd4c27356b79f8acf0c7c8a39ca6c7c961971a5cd55a40b7f694 pg_dump -U postgres -d postgres -h localhost -F c -f /prayer_ml.dump
+docker cp 4c54c78c92ecfd4c27356b79f8acf0c7c8a39ca6c7c961971a5cd55a40b7f694:/prayer_ml.dump /home/username/backup/prayer_ml.dump

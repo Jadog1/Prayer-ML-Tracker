@@ -11,13 +11,16 @@ class Corpus(ABC):
         self.corpus_text = None
         self.max_length = max_length
         
-    def _cut_text(self, text: str)->str:
-        if self.max_length > 0 and len(text) > self.max_length:
-            return text[:self.max_length] + "..."
+    def _cut_text(self, text: str, max_length=None)->str:
+        if max_length is None:
+            max_length = self.max_length
+
+        if max_length > 0 and len(text) > max_length:
+            return text[:max_length] + "..."
         return text
 
     @abstractmethod
-    def get_row_text(self, index : int)->str:
+    def get_row_text(self, index : int, max_length : int = None)->str:
         pass
 
 class BibleCorpus(Corpus):
@@ -35,10 +38,10 @@ class BibleCorpus(Corpus):
         else:
             return f"{row['Book']} {row['Chapter']}:{row['Verse']}"
         
-    def get_row_text(self, index : int)->str:
+    def get_row_text(self, index : int, max_length : int = None)->str:
         row = self.df.iloc[index]
         bibleContext = self._get_row_bible_context(row)
-        verse = self._cut_text(row[self.text_column])
+        verse = self._cut_text(row[self.text_column], max_length)
         return f"{bibleContext} - {verse}"
 
 class PrayerRequestCorpus(Corpus):
@@ -47,17 +50,18 @@ class PrayerRequestCorpus(Corpus):
         self.corpus_text = self.df["prayerRequest"].tolist()
         self.max_length = max_length
 
-    def get_row_text(self, index : int)->str:
+    def get_row_text(self, index : int, max_length : int = None)->str:
         row = self.df.iloc[index]
-        return row["subject"] + " - " + self._cut_text(row["prayerRequest"])
+        return row["subject"] + " - " + self._cut_text(row["prayerRequest"], max_length)
 
 class Embedder(ABC):
-    def __init__(self, embedder_name: str, postfix: str):
+    def __init__(self, embedder_name: str, postfix: str, cache_results = True):
         self.postfix = postfix
         self.embedder = None
         self.name = None
         self.corpus = None
         self.embedder_name = embedder_name
+        self.cache_results = cache_results
 
     @abstractmethod
     def _file_name(self)->str:
@@ -79,9 +83,12 @@ class Embedder(ABC):
         self.name = name
         self.corpus = corpus.corpus_text
 
+    def _should_cache(self)->bool:
+        return self.name is not None and self.cache_results
+
 class HugfaceEmbedder(Embedder):
-    def __init__(self, embedder_name: str, postfix: str = "_embeddings.pkl"):
-        super().__init__(embedder_name, postfix)
+    def __init__(self, embedder_name: str, postfix: str = "_embeddings.pkl", cache_results = True):
+        super().__init__(embedder_name, postfix, cache_results)
         self.embedder = SentenceTransformer(embedder_name)
         self.embeddings = None
 
@@ -90,13 +97,13 @@ class HugfaceEmbedder(Embedder):
 
     def _cache_embeddings(self):
         self.embeddings = self.calculate_embeddings()
-        if self.name is not None:
+        if self._should_cache():
             with open(self._file_name(), 'wb+') as file:
                 pickle.dump(self.embeddings, file)
         return self.embeddings
     
     def load(self)->list[torch.Tensor]:
-        if self.name is None:
+        if self._should_cache():
             return self._cache_embeddings()
         
         try:
@@ -110,7 +117,7 @@ class HugfaceEmbedder(Embedder):
         if corpus is None:
             corpus = self.corpus
         isList = type(corpus) is list
-        embeddings = self.embedder.encode(corpus, convert_to_tensor=True, show_progress_bar=isList)
+        embeddings = self.embedder.encode(corpus, show_progress_bar=isList)
         return embeddings
     
 class TopResults():
@@ -127,6 +134,13 @@ class TopResults():
             corpusText = self.corpus.get_row_text(int(idx))
             print(corpusText, "(Score: {:.4f})".format(score))
         return self
+    
+    def get_results(self, max_length = None):
+        results = []
+        for score, idx in zip(self.scores, self.indices):
+            corpusText = self.corpus.get_row_text(int(idx), max_length)
+            results.append((corpusText, score))
+        return results
 
 
 class DocumentSearch(ABC):
