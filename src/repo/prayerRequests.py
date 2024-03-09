@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from ..dto.prayerRequests import PrayerRequest, PrayerRequests
-from typing import List
+from typing import List, Union
 from sqlalchemy.orm import scoped_session, Session
 from .orm import PrayerRequestORM, LinkORM
 from ..models.models import Embeddings
@@ -24,6 +24,10 @@ class PrayerRequestRepo(ABC):
 
     @abstractmethod
     def save_link(self, link_id:int):
+        pass
+
+    @abstractmethod
+    def get_similar_requests(self, account_id:int, request: PrayerRequest)->PrayerRequests:
         pass
         
 class PrayerRequestRepoImpl(PrayerRequestRepo):
@@ -67,6 +71,17 @@ class PrayerRequestRepoImpl(PrayerRequestRepo):
         with self.pool() as session:
             session.add(LinkORM())
             session.commit()
+
+    def get_similar_requests(self, account_id:int, request: Union[int, PrayerRequest])->PrayerRequests:
+        with self.pool() as session:
+            request_id = request if type(request) is int else request.id
+            loadedPrayerRequest = session.query(PrayerRequestORM).filter(PrayerRequestORM.id == request_id).first()
+            requests = session.query(PrayerRequestORM).filter(
+                PrayerRequestORM.account_id == account_id, 
+                PrayerRequestORM.id != request_id).order_by(
+                    PrayerRequestORM.gte_base_embedding.cosine_distance(loadedPrayerRequest.gte_base_embedding)
+                ).all()
+            return self._to_prayer_requests(requests)
 
     def _to_prayer_requests(self, requests: List[PrayerRequestORM])->PrayerRequests:
         prayer_requests = PrayerRequests()
