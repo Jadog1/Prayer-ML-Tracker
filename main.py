@@ -13,6 +13,7 @@ from src.models.models import Embeddings
 load_dotenv()
 pg_uri = os.environ.get('PRAYERS_PG_DATABASE_URL')
 
+print("Loading embeddings")    
 embedding_model = Embeddings()
 class Repositories:
     def __init__(self, pg_uri):
@@ -24,8 +25,10 @@ class Repositories:
     def close(self):
         self.pool.close()
 
+print("Loading repositories")
 repositories = Repositories(pg_uri)
 
+print("Creating FastAPI app")
 app = FastAPI()
 
 prayerRequestRoute = PrayerRequestRoute(repositories.prayer_request_repo, embedding_model)
@@ -35,7 +38,7 @@ contactRoute = ContactRoute(repositories.contact_repo)
 app.include_router(contactRoute.router, prefix="/contacts")
 
 
-app.mount("/", StaticFiles(directory="frontend", html=True), name="static")
+app.mount("/", StaticFiles(directory="frontend/build", html=True), name="static")
 
 @app.on_event("shutdown")
 async def shutdown_event():
