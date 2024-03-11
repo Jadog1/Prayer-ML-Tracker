@@ -23,6 +23,10 @@ class PrayerRequestRepo(ABC):
         pass
 
     @abstractmethod
+    def delete(self, account_id:int, request_id: int):
+        pass
+
+    @abstractmethod
     def save_link(self, link_id:int):
         pass
 
@@ -67,9 +71,25 @@ class PrayerRequestRepoImpl(PrayerRequestRepo):
         prayer_request.gte_base_embedding = embeddings.get_gte_base()
         prayer_request.msmarco_base_embedding = embeddings.get_msmarco_base()
 
-    def save_link(self, link_id:int):
+    def link_requests(self, account_id:int, id_from:int, id_to:int):
         with self.pool() as session:
-            session.add(LinkORM())
+            request_to = session.query(PrayerRequestORM).filter(PrayerRequestORM.account_id == account_id, PrayerRequestORM.id == id_to).first()
+            request_from = session.query(PrayerRequestORM).filter(PrayerRequestORM.account_id == account_id, PrayerRequestORM.id == id_from).first()
+            if not request_to or not request_from:
+                raise ValueError(f"One of the prayer requests does not exist or was not saved properly")
+            if request_to.link_id:
+                request_from.link_id = request_to.link_id
+            else:
+                link = LinkORM()
+                session.add(link)
+                session.flush()
+                request_from.link_id = link.id
+                request_to.link_id = link.id
+            session.commit()
+
+    def delete(self, account_id:int, id:int):
+        with self.pool() as session:
+            session.query(PrayerRequestORM).filter(PrayerRequestORM.account_id == account_id, PrayerRequestORM.id == id).delete()
             session.commit()
 
     def get_similar_requests(self, account_id:int, request: Union[int, PrayerRequest])->PrayerRequests:

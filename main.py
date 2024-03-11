@@ -32,10 +32,10 @@ print("Creating FastAPI app")
 app = FastAPI()
 
 prayerRequestRoute = PrayerRequestRoute(repositories.prayer_request_repo, embedding_model)
-app.include_router(prayerRequestRoute.router, prefix="/prayerRequests")
+app.include_router(prayerRequestRoute.router, prefix="/api/prayerRequests")
 
 contactRoute = ContactRoute(repositories.contact_repo)
-app.include_router(contactRoute.router, prefix="/contacts")
+app.include_router(contactRoute.router, prefix="/api/contacts")
 
 
 app.mount("/", StaticFiles(directory="frontend/build", html=True), name="static")

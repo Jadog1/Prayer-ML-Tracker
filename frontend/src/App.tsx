@@ -2,6 +2,7 @@
 
 import React from 'react';
 import PrayerRequests from './prayerRequests';
+import './App.css';
 
 function App() {
   return (

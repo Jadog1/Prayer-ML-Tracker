@@ -18,23 +18,32 @@ class PrayerRequest():
     def to_dict(self):
         return {
             'account_id': self.account_id,
-            'contact_id': self.contact_id,
-            'group_id': self.group_id,
+            'contact': {
+                'id': self.contact_id,
+                'name': self.name,
+                'group': {
+                    'id': self.group_id,
+                    'name': self.group
+                }
+            },
             'request': self.request,
             'archived_at': self.archived_at,
-            'name': self.name,
-            'group': self.group,
             'link_id': self.link_id,
             'id': self.id,
         }
     
     def from_dict(self, data: dict)->'PrayerRequest':
         self.account_id = data.get('account_id')
-        self.contact_id = data.get('contact_id')
         self.request = data.get('request')
         self.archived_at = data.get('archived_at')
         self.link_id = data.get('link_id')
         self.id = data.get('id')
+        if data.get('contact'):
+            self.contact_id = data['contact'].get('id')
+            self.name = data['contact'].get('name')
+            if data['contact'].get('group'):
+                self.group_id = data['contact']['group'].get('id')
+                self.group = data['contact']['group'].get('name')
         return self
 
 class PrayerRequests():

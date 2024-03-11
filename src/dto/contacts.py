@@ -5,6 +5,7 @@ from src.repo.orm import ContactORM
 class Contact():
     def __init__(self, contact: ContactORM = None):
         if contact:
+            self.id = contact.id
             self.account_id = contact.account_id
             self.name = contact.name
             self.group_id = contact.group_id
@@ -14,15 +15,19 @@ class Contact():
         return {
             'account_id': self.account_id,
             'name': self.name,
-            'group_id': self.group_id,
-            'group': self.group
+            'group': {
+                'id': self.group_id, 
+                'name': self.group},
+            'id': self.id,
         }
     
     def from_dict(self, data: dict)->'Contact':
         self.account_id = data.get('account_id')
         self.name = data.get('name')
-        self.group_id = data.get('group_id')
-        self.group = data.get('group')
+        self.id = data.get('id')
+        if data.get('group'):
+            self.group_id = data['group'].get('id')
+            self.group = data['group'].get('name')
         return self
     
 class Contacts():
