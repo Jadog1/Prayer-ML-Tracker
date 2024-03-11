@@ -60,11 +60,11 @@ class Contacts {
         this.contacts = [];
     }
 
-    async all(): Promise<Contact[]> {
-        const response = await fetch('/api/contacts');
+    async all(): Promise<Contacts> {
+        const response = await fetch('/api/contacts/');
         const json = await response.json();
         this.contacts = json.map((c: any) => Contact.fromJson(c));
-        return this.contacts;
+        return this;
     }
 }
 
@@ -88,7 +88,7 @@ class Group {
     }
 
     async save(): Promise<void> {
-        const response = await fetch('/api/contact/group', {
+        const response = await fetch('/api/contacts/group', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -104,7 +104,7 @@ class Group {
     }
 
     async delete(): Promise<void> {
-        await fetch(`/api/contact/group/${this.id}`, {
+        await fetch(`/api/contacts/group/${this.id}`, {
             method: 'DELETE',
         });
     }
@@ -118,7 +118,7 @@ class Groups {
     }
 
     async all(): Promise<Groups> {
-        const response = await fetch('/api/contact/groups');
+        const response = await fetch('/api/contacts/groups');
         const json = await response.json();
         this.groups = json.map((g: any) => Group.fromJson(g));
         return this;

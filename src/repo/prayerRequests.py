@@ -27,7 +27,7 @@ class PrayerRequestRepo(ABC):
         pass
 
     @abstractmethod
-    def save_link(self, link_id:int):
+    def link_requests(self, account_id:int, id_from:int, id_to:int):
         pass
 
     @abstractmethod
@@ -98,9 +98,11 @@ class PrayerRequestRepoImpl(PrayerRequestRepo):
             loadedPrayerRequest = session.query(PrayerRequestORM).filter(PrayerRequestORM.id == request_id).first()
             requests = session.query(PrayerRequestORM).filter(
                 PrayerRequestORM.account_id == account_id, 
-                PrayerRequestORM.id != request_id).order_by(
+                PrayerRequestORM.id != request_id,
+                PrayerRequestORM.contact_id == loadedPrayerRequest.contact_id,
+                PrayerRequestORM.archived_at != None).order_by(
                     PrayerRequestORM.gte_base_embedding.cosine_distance(loadedPrayerRequest.gte_base_embedding)
-                ).all()
+                ).limit(5).all()
             return self._to_prayer_requests(requests)
 
     def _to_prayer_requests(self, requests: List[PrayerRequestORM])->PrayerRequests:

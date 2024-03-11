@@ -39,7 +39,7 @@ class PrayerRequestRoute():
         results = self.repo.get_contact(account_id, contact_id)
         return results.to_list()
     
-    def save(self, data: SaveBaseModel):
+    def save(self, data: dict):
         prayer = PrayerRequest().from_dict(data)
         self.repo.save(account_id, prayer)
         return prayer.to_dict()
@@ -53,5 +53,5 @@ class PrayerRequestRoute():
         return similar.to_list()
     
     def link_requests(self, link: LinkBaseModel):
-        self.repo.save_link(account_id, link.id_from, link.id_to)
+        self.repo.link_requests(account_id, link.id_from, link.id_to)
         return {"status": "linked"}

@@ -32,7 +32,7 @@ print("Creating FastAPI app")
 app = FastAPI()
 
 prayerRequestRoute = PrayerRequestRoute(repositories.prayer_request_repo, embedding_model)
-app.include_router(prayerRequestRoute.router, prefix="/api/prayerRequests")
+app.include_router(prayerRequestRoute.router, prefix="/api/prayer_requests")
 
 contactRoute = ContactRoute(repositories.contact_repo)
 app.include_router(contactRoute.router, prefix="/api/contacts")

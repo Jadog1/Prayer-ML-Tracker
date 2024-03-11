@@ -1,6 +1,6 @@
 // src/PrayerRequests.tsx
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Header from './components/Header';
 import Sidebar from './components/Sidebar';
 import MainContent from './components/MainContent';
@@ -12,6 +12,11 @@ function PrayerRequestView() {
   const [id, setId] = useState(0);
   const [prayerRequest, setPrayerRequest] = useState('');
   const [contact, setContact] = useState<Contact>(new Contact());
+  const [disabled, setDisabled] = useState(false);
+
+  useEffect(() => {
+    setDisabled(contact.id === 0);
+  }, [contact]);
 
   const save = async (): Promise<PrayerRequest | null> => {
     const pr = new PrayerRequest();
@@ -22,7 +27,7 @@ function PrayerRequestView() {
       await pr.save();
       return pr;
     } catch (error: any) {
-      setErrorText(error);
+      setErrorText(error.message);
     }
     return null
   }
@@ -45,12 +50,12 @@ function PrayerRequestView() {
   
   return (
     <div className="container mx-auto p-4">
-      <Header save={save} id={id} contact={contact} />
+      <Header save={save} id={id} contact={contact} disabled={disabled} />
       {errorText && <p className="text-red-500">{errorText}</p>}
       <div className="flex">
-        <Sidebar />
+        <Sidebar setContact={setContact}/>
         <MainContent prayerRequest={prayerRequest} setPrayerRequest={setPrayerRequest}
-          findSimilarRequests={findSimilarRequests} />
+          findSimilarRequests={findSimilarRequests} disabled={disabled} />
       </div>
     </div>
   );

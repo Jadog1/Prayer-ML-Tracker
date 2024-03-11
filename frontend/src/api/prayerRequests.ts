@@ -45,7 +45,7 @@ class PrayerRequest {
     }
 
     async save(): Promise<void> {
-        const response = await fetch('/api/prayer_requests', {
+        const response = await fetch('/api/prayer_requests/', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

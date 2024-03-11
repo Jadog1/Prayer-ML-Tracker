@@ -7,6 +7,7 @@ interface MainContentProps {
   prayerRequest: string;
   setPrayerRequest: (prayerRequest: string) => void;
   findSimilarRequests: () => Promise<PrayerRequests | null>;
+  disabled: boolean;
 }
 
 function MainContent(props: MainContentProps) {
@@ -29,6 +30,7 @@ function MainContent(props: MainContentProps) {
         onChange={(e) => props.setPrayerRequest(e.target.value)}
         className="w-full h-64 p-2 border rounded"
         placeholder="Type your prayer request here..."
+        disabled={props.disabled}
       ></textarea>
 
       <div className="mt-4">

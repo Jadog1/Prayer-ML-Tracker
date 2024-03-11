@@ -35,8 +35,8 @@ class PrayerRequest():
     def from_dict(self, data: dict)->'PrayerRequest':
         self.account_id = data.get('account_id')
         self.request = data.get('request')
-        self.archived_at = data.get('archived_at')
-        self.link_id = data.get('link_id')
+        self.archived_at = data.get('archived_at') if data.get('archived_at') != '' else None
+        self.link_id = data.get('link_id') if data.get('link_id') != 0 else None
         self.id = data.get('id')
         if data.get('contact'):
             self.contact_id = data['contact'].get('id')

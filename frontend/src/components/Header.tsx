@@ -8,7 +8,8 @@ import { Contact } from '../api/contacts';
 type HeaderProps = {
   save: () => void;
   id: PrayerRequestID;
-  contact: Contact
+  contact: Contact;
+  disabled: boolean;
 };
 function Header(props: HeaderProps) {
 
@@ -18,7 +19,7 @@ function Header(props: HeaderProps) {
       <h1 className="text-2xl font-bold">Prayer Requests</h1>
       {props.contact.name && 
         <p className="text-gray-500">{props.contact.name}</p>}
-      <button onClick={() => props.save()} className="bg-blue-500 text-white px-4 py-2 rounded">
+      <button onClick={() => props.save()} className="bg-blue-500 text-white px-4 py-2 rounded" disabled={props.disabled}>
         {props.id ? 'Update' : 'Save'}
       </button>
     </div>
