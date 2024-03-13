@@ -16,6 +16,7 @@ function PrayerRequestView() {
 
   useEffect(() => {
     setDisabled(contact.id === 0);
+    setId(0);
   }, [contact]);
 
   const save = async (): Promise<PrayerRequest | null> => {
@@ -24,7 +25,8 @@ function PrayerRequestView() {
     pr.contact = contact;
     pr.request = prayerRequest;
     try {
-      await pr.save();
+      let newId = await pr.save();
+      setId(newId);
       return pr;
     } catch (error: any) {
       setErrorText(error.message);
@@ -34,12 +36,9 @@ function PrayerRequestView() {
 
   const findSimilarRequests = async (): Promise<PrayerRequests | null> => {
     const pr = new PrayerRequests();
-    let idToUse = id;
     try {
-      if (contact.id == 0) {
-        let saveResult = await save();
-        if (saveResult) idToUse = saveResult.id;
-        else return null;
+      if (id == 0) {
+        throw new Error('Prayer request must be saved before finding similar requests');
       }
       return await pr.getTopRequests(id);
     } catch (error: any) {

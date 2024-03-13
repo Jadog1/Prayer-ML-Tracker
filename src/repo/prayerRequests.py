@@ -19,7 +19,7 @@ class PrayerRequestRepo(ABC):
         pass
 
     @abstractmethod
-    def save(self, account_id:int, request: PrayerRequest):
+    def save(self, account_id:int, request: PrayerRequest)->int:
         pass
 
     @abstractmethod
@@ -56,15 +56,27 @@ class PrayerRequestRepoImpl(PrayerRequestRepo):
                 PrayerRequestORM.created_at >= start, PrayerRequestORM.created_at <= end).all()
             return self._to_prayer_requests(requests)
 
-    def save(self, account_id:int, request: PrayerRequest):
+    def save(self, account_id:int, request: PrayerRequest)->int:
         with self.pool() as session:
             request.account_id = account_id
             ormRequest = PrayerRequestORM(
                 id=request.id, account_id=account_id, contact_id=request.contact_id, 
                 request=request.request, archived_at=request.archived_at, link_id=request.link_id)
             self._set_embeddings(ormRequest)
-            session.merge(ormRequest)
+            session.add(ormRequest)
             session.commit()
+            session.refresh(ormRequest)
+            return ormRequest.id
+        
+    def update(self, account_id:int, request: PrayerRequest)->int:
+        with self.pool() as session:
+            ormRequest = session.query(PrayerRequestORM).filter(PrayerRequestORM.account_id == account_id, PrayerRequestORM.id == request.id).first()
+            ormRequest.request = request.request
+            ormRequest.archived_at = request.archived_at
+            ormRequest.link_id = request.link_id
+            self._set_embeddings(ormRequest)
+            session.commit()
+            return ormRequest.id
 
     def _set_embeddings(self, prayer_request: PrayerRequestORM):
         embeddings = self.model.calculate_embeddings(prayer_request.request)

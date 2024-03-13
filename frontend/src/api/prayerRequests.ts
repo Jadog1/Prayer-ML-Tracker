@@ -44,9 +44,11 @@ class PrayerRequest {
         return p;
     }
 
-    async save(): Promise<void> {
+    async save(): Promise<PrayerRequestID> {
+        let method = 'POST';
+        if (this.id) method = 'PUT';
         const response = await fetch('/api/prayer_requests/', {
-            method: 'POST',
+            method: method,
             headers: {
                 'Content-Type': 'application/json',
             },
@@ -59,8 +61,14 @@ class PrayerRequest {
                 contact: this.contact,
             }),
         });
+        if (!response.ok) {
+            const message = await response.text();
+            throw new Error(`Failed to save: ${message}`);
+        }
         const json = await response.json();
+        console.log(json);
         this.id = json.id;
+        return this.id;
     }
 
     async delete (): Promise<void> {
@@ -79,6 +87,9 @@ class PrayerRequests {
 
     async getRequestsForContact(contactId: number): Promise<PrayerRequest[]> {
         const response = await fetch(`/api/prayer_requests/contact/${contactId}`);
+        if (!response.ok) {
+            throw new Error(`Failed to fetch: ${response.statusText}`);
+        }
         const json = await response.json();
         this.requests = json.map((p: any) => PrayerRequest.fromJson(p));
         return this.requests;

@@ -50,30 +50,32 @@ function SidebarGroups(props: SidebarGroupsProps) {
   };
 
   return (
-      <ul>
-        {props.groups.map((group) => (
-          <li key={group.id} className="mb-2 border-b pb-2">
-            <div className="cursor-pointer flex justify-between items-center"
-              onClick={() => toggleGroup(group.id)}>
-              <span className="flex items-center">
-                {expandedGroups.includes(group.id) ? '🔽' : '▶️'}
-                <span className="ml-2">{group.name}</span>
-              </span>
-            </div>
-            {expandedGroups.includes(group.id) && (
+    <ul>
+      {props.groups.map((group) => (
+        <li key={group.id} className="mb-2 border-b pb-2">
+          <div className="cursor-pointer flex justify-between items-center"
+            onClick={() => toggleGroup(group.id)}>
+            <span className="flex items-center">
+              {expandedGroups.includes(group.id) ? '🔽' : '▶️'}
+              <span className="ml-2">{group.name}</span>
+            </span>
+          </div>
+          {expandedGroups.includes(group.id) && (
+            <div className="flex flex-col max-h-80 overflow-y-auto">
               <ul className="ml-4">
-                {props.contacts
+                {props.contacts 
                   .filter((contact) => contact.group.id === group.id)
                   .map((contact) => (
-                    <li key={contact.id} className="mb-2 cursor-pointer border-b" onClick={() => props.setContact(contact)}>
+                    <li key={contact.id} className="mb-2 cursor-pointer border-b hover:bg-blue-300 transition duration-300 ease-in-out" onClick={() => props.setContact(contact)}>
                       {contact.name}
                     </li>
                   ))}
               </ul>
-            )}
-          </li>
-        ))}
-      </ul>
+            </div>
+          )}
+        </li>
+      ))}
+    </ul>
   );
 }
 

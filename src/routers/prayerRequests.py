@@ -1,4 +1,5 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
+from src.framework.app import App
 from src.models.models import Embeddings
 from ..repo.prayerRequests import PrayerRequestRepoImpl
 from ..dto.prayerRequests import PrayerRequest
@@ -20,13 +21,15 @@ class LinkBaseModel(BaseModel):
     id_to: int
 
 class PrayerRequestRoute():
-    def __init__(self, repo: PrayerRequestRepoImpl, model: Embeddings):
+    def __init__(self, app: App, repo: PrayerRequestRepoImpl, model: Embeddings):
+        self.app = app
         self.repo = repo
         self.model = model
         self.router = APIRouter()
         self.router.add_api_route("/", self.get_all, methods=["GET"])
         self.router.add_api_route("/contact/{contact_id}", self.get_contact, methods=["GET"])
         self.router.add_api_route("/", self.save, methods=["POST"])
+        self.router.add_api_route("/", self.update, methods=["PUT"])
         self.router.add_api_route("/{id}", self.delete, methods=["DELETE"])
         self.router.add_api_route("/similar/{id}", self.find_similar, methods=["GET"])
         self.router.add_api_route("/link", self.link_requests, methods=["POST"])
@@ -41,14 +44,29 @@ class PrayerRequestRoute():
     
     def save(self, data: dict):
         prayer = PrayerRequest().from_dict(data)
-        self.repo.save(account_id, prayer)
-        return prayer.to_dict()
+        try:
+            newId = self.repo.save(account_id, prayer)
+        except Exception as e:
+            self.app.Logger().error(f"Error saving prayer request: {e}", error=e, data=prayer.to_dict())
+            raise HTTPException(status_code=400, detail="Error saving prayer request")
+        return {"id": newId}
+    
+    def update(self, data: dict):
+        prayer = PrayerRequest().from_dict(data)
+        try:
+            newId = self.repo.update(account_id, prayer)
+        except Exception as e:
+            self.app.Logger().error(f"Error updating prayer request: {e}", error=e, data=prayer.to_dict())
+            raise HTTPException(status_code=400, detail="Error updating prayer request")
+        return {"id": newId}
     
     def delete(self, id: int):
         self.repo.delete(account_id, id)
         return {"status": "deleted"}
     
     def find_similar(self, id: int):
+        if id == 0:
+            raise HTTPException(status_code=400, detail="id cannot be 0")
         similar = self.repo.get_similar_requests(account_id, id)
         return similar.to_list()
     

@@ -37,7 +37,8 @@ class PrayerRequest():
         self.request = data.get('request')
         self.archived_at = data.get('archived_at') if data.get('archived_at') != '' else None
         self.link_id = data.get('link_id') if data.get('link_id') != 0 else None
-        self.id = data.get('id')
+        id = data.get('id')
+        self.id = id if id is not None and id > 0 else None
         if data.get('contact'):
             self.contact_id = data['contact'].get('id')
             self.name = data['contact'].get('name')

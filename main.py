@@ -1,5 +1,6 @@
 from dotenv import load_dotenv
 from fastapi import FastAPI
+from src.framework.app import App
 from src.routers.prayerRequests import PrayerRequestRoute
 from src.routers.contacts import ContactRoute
 from fastapi.staticfiles import StaticFiles
@@ -29,18 +30,20 @@ print("Loading repositories")
 repositories = Repositories(pg_uri)
 
 print("Creating FastAPI app")
-app = FastAPI()
+httpApp = FastAPI()
 
-prayerRequestRoute = PrayerRequestRoute(repositories.prayer_request_repo, embedding_model)
-app.include_router(prayerRequestRoute.router, prefix="/api/prayer_requests")
+frameworkApp = App()
 
-contactRoute = ContactRoute(repositories.contact_repo)
-app.include_router(contactRoute.router, prefix="/api/contacts")
+prayerRequestRoute = PrayerRequestRoute(frameworkApp, repositories.prayer_request_repo, embedding_model)
+httpApp.include_router(prayerRequestRoute.router, prefix="/api/prayer_requests")
+
+contactRoute = ContactRoute(frameworkApp, repositories.contact_repo)
+httpApp.include_router(contactRoute.router, prefix="/api/contacts")
 
 
-app.mount("/", StaticFiles(directory="frontend/build", html=True), name="static")
+httpApp.mount("/", StaticFiles(directory="frontend/build", html=True), name="static")
 
-@app.on_event("shutdown")
+@httpApp.on_event("shutdown")
 async def shutdown_event():
     repositories.close()
     print("Closed database connection pool")

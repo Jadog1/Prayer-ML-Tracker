@@ -16,7 +16,7 @@ In specific, this project uses NLP to:
 Use the following command to run the project:
 
 ```bash
-python -m uvicorn main:app --reload
+python -m uvicorn main:httpApp --reload
 ```
 
 
