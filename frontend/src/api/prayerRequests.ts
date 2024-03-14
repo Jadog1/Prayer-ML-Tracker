@@ -76,6 +76,15 @@ class PrayerRequest {
             method: 'DELETE',
         });
     }
+
+    async load(id: PrayerRequestID): Promise<PrayerRequest> {
+        const response = await fetch(`/api/prayer_requests/${id}`);
+        if (!response.ok) {
+            throw new Error(`Failed to fetch: ${response.statusText}`);
+        }
+        const json = await response.json();
+        return PrayerRequest.fromJson(json);
+    }
 }
 
 class PrayerRequests {
@@ -85,7 +94,7 @@ class PrayerRequests {
         this.requests = [];
     }
 
-    async getRequestsForContact(contactId: number): Promise<PrayerRequest[]> {
+    async getRequestsForContact(contactId: ContactID): Promise<PrayerRequest[]> {
         const response = await fetch(`/api/prayer_requests/contact/${contactId}`);
         if (!response.ok) {
             throw new Error(`Failed to fetch: ${response.statusText}`);

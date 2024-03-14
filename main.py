@@ -1,5 +1,6 @@
 from dotenv import load_dotenv
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from src.framework.app import App
 from src.routers.prayerRequests import PrayerRequestRoute
 from src.routers.contacts import ContactRoute

@@ -27,6 +27,7 @@ class PrayerRequestRoute():
         self.model = model
         self.router = APIRouter()
         self.router.add_api_route("/", self.get_all, methods=["GET"])
+        self.router.add_api_route("/{id}", self.get, methods=["GET"])
         self.router.add_api_route("/contact/{contact_id}", self.get_contact, methods=["GET"])
         self.router.add_api_route("/", self.save, methods=["POST"])
         self.router.add_api_route("/", self.update, methods=["PUT"])
@@ -41,6 +42,10 @@ class PrayerRequestRoute():
     def get_contact(self, contact_id: int):
         results = self.repo.get_contact(account_id, contact_id)
         return results.to_list()
+    
+    def get(self, id: int):
+        result = self.repo.get(account_id, id)
+        return result.to_dict()
     
     def save(self, data: dict):
         prayer = PrayerRequest().from_dict(data)

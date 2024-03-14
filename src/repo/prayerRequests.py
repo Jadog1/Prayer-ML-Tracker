@@ -7,6 +7,10 @@ from ..models.models import Embeddings
 
 class PrayerRequestRepo(ABC):
     @abstractmethod
+    def get(self, account_id:int, request_id:int)->PrayerRequest:
+        pass
+
+    @abstractmethod
     def get_all(self, account_id:int)->PrayerRequests:
         pass
 
@@ -39,6 +43,11 @@ class PrayerRequestRepoImpl(PrayerRequestRepo):
         self.pool = session
         self.model = model
 
+    def get(self, account_id:int, request_id:int)->PrayerRequest:
+        with self.pool() as session:
+            request = session.query(PrayerRequestORM).filter(PrayerRequestORM.account_id == account_id, PrayerRequestORM.id == request_id).first()
+            return PrayerRequest(request)
+
     def get_all(self, account_id:int)->PrayerRequests:
         with self.pool() as session:
             requests = session.query(PrayerRequestORM).filter(PrayerRequestORM.account_id == account_id).all()
@@ -46,7 +55,9 @@ class PrayerRequestRepoImpl(PrayerRequestRepo):
 
     def get_contact(self, account_id:int, contact_id: int)->PrayerRequests:
         with self.pool() as session:
-            requests = session.query(PrayerRequestORM).filter(PrayerRequestORM.account_id == account_id, PrayerRequestORM.contact_id == contact_id).all()
+            requests = session.query(PrayerRequestORM).filter(
+                PrayerRequestORM.account_id == account_id, PrayerRequestORM.contact_id == contact_id
+                ).order_by(PrayerRequestORM.updated_at.desc()).all()
             return self._to_prayer_requests(requests)
 
     def get_daterange(self, account_id:int, start:str, end:str)->PrayerRequests:

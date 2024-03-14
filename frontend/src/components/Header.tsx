@@ -10,15 +10,21 @@ type HeaderProps = {
   id: PrayerRequestID;
   contact: Contact;
   disabled: boolean;
+  toggleListView: () => void;
 };
 function Header(props: HeaderProps) {
 
 
   return (
     <div className="flex justify-between items-center mb-4">
-      <h1 className="text-2xl font-bold">Prayer Requests</h1>
-      {props.contact.name && 
-        <p className="text-gray-500">{props.contact.name}</p>}
+
+      {props.contact.name &&
+        <>
+          <p className="text-2xl font-bolder text-black">{props.contact.name}</p>
+          <button onClick={() => props.toggleListView()} className="bg-blue-500 text-white px-4 py-2 rounded">
+            Toggle List View
+          </button>
+        </>}
       <button onClick={() => props.save()} className="bg-blue-500 text-white px-4 py-2 rounded" disabled={props.disabled}>
         {props.id ? 'Update' : 'Save'}
       </button>
