@@ -1,4 +1,5 @@
 
+import { BibleResults } from './bible';
 import {Contact, ContactID, Group} from './contacts';
 
 export type PrayerRequestID = number;
@@ -85,6 +86,22 @@ class PrayerRequest {
         const json = await response.json();
         return PrayerRequest.fromJson(json);
     }
+
+    async link(id: PrayerRequestID): Promise<void> {
+        const response = await fetch(`/api/prayer_requests/link`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                id_from: this.id,
+                id_to: id,
+            }),
+        });
+        if (!response.ok) {
+            throw new Error(`Failed to link: ${response.statusText}`);
+        }
+    }
 }
 
 class PrayerRequests {
@@ -106,6 +123,9 @@ class PrayerRequests {
 
     async getTopRequests(id: PrayerRequestID): Promise<PrayerRequests> {
         const response = await fetch(`/api/prayer_requests/similar/${id}`);
+        if (!response.ok) {
+            throw new Error(`Failed to fetch: ${response.statusText}`);
+        }
         const json = await response.json();
         this.requests = json.map((p: any) => PrayerRequest.fromJson(p));
         return this;

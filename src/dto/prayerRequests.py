@@ -1,9 +1,10 @@
 from typing import List
 import pandas as pd
+from src.models.models import EmbeddingResult
 from src.repo.orm import PrayerRequestORM
 
 class PrayerRequest():
-    def __init__(self, prayerRequest: PrayerRequestORM = None):
+    def __init__(self, prayerRequest: PrayerRequestORM = None, includeEmbeddings: bool = False):
         if prayerRequest:
             self.id = prayerRequest.id
             self.account_id = prayerRequest.account_id
@@ -14,6 +15,8 @@ class PrayerRequest():
             self.name = prayerRequest.contact.name if prayerRequest.contact else None
             self.group = prayerRequest.contact.group.name if prayerRequest.contact.group else None
             self.link_id = prayerRequest.link_id
+            if includeEmbeddings:
+                self.embeddings = EmbeddingResult(prayerRequest.gte_base_embedding, prayerRequest.msmarco_base_embedding)
     
     def to_dict(self):
         return {

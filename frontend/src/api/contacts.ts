@@ -64,6 +64,8 @@ class Contacts {
         const response = await fetch('/api/contacts/');
         const json = await response.json();
         this.contacts = json.map((c: any) => Contact.fromJson(c));
+        // Sort contacts by name asc
+        this.contacts.sort((a, b) => a.name.localeCompare(b.name));
         return this;
     }
 }

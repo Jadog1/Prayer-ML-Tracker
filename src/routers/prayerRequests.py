@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
 from src.framework.app import App
-from src.models.models import Embeddings
+from src.models.models import BibleEmbeddings, Embeddings
 from ..repo.prayerRequests import PrayerRequestRepoImpl
 from ..dto.prayerRequests import PrayerRequest
 from pydantic import BaseModel
@@ -21,10 +21,11 @@ class LinkBaseModel(BaseModel):
     id_to: int
 
 class PrayerRequestRoute():
-    def __init__(self, app: App, repo: PrayerRequestRepoImpl, model: Embeddings):
+    def __init__(self, app: App, repo: PrayerRequestRepoImpl, model: Embeddings, bibleModel: BibleEmbeddings):
         self.app = app
         self.repo = repo
         self.model = model
+        self.bibleModel = bibleModel
         self.router = APIRouter()
         self.router.add_api_route("/", self.get_all, methods=["GET"])
         self.router.add_api_route("/{id}", self.get, methods=["GET"])
@@ -33,6 +34,7 @@ class PrayerRequestRoute():
         self.router.add_api_route("/", self.update, methods=["PUT"])
         self.router.add_api_route("/{id}", self.delete, methods=["DELETE"])
         self.router.add_api_route("/similar/{id}", self.find_similar, methods=["GET"])
+        self.router.add_api_route("/similar/bible/{id}", self.find_similar_bible_verses, methods=["GET"])
         self.router.add_api_route("/link", self.link_requests, methods=["POST"])
 
     def get_all(self):
@@ -74,6 +76,15 @@ class PrayerRequestRoute():
             raise HTTPException(status_code=400, detail="id cannot be 0")
         similar = self.repo.get_similar_requests(account_id, id)
         return similar.to_list()
+    
+    def find_similar_bible_verses(self, id: int):
+        if id == 0:
+            raise HTTPException(status_code=400, detail="id cannot be 0")
+        embedding = self.repo.get(account_id, id, include_embeddings=True).embeddings
+        similar = self.bibleModel.search_verses(embedding, 5)
+        return similar
+        
+
     
     def link_requests(self, link: LinkBaseModel):
         self.repo.link_requests(account_id, link.id_from, link.id_to)

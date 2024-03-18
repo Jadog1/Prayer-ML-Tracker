@@ -4,10 +4,11 @@ import React, { useEffect, useState } from 'react';
 import Header from './components/Header';
 import Sidebar from './components/Sidebar';
 import MainContent from './components/MainContent';
-import { PrayerRequest, PrayerRequests } from './api/prayerRequests';
+import { PrayerRequest, PrayerRequestID, PrayerRequests } from './api/prayerRequests';
 import { Contact } from './api/contacts';
 import ErrorMessage from './components/errorBubble';
 import PrayerList from './components/PrayerList';
+import { BibleResults } from './api/bible';
 
 function PrayerRequestView() {
   const [errorText, setErrorText] = useState('');
@@ -19,6 +20,7 @@ function PrayerRequestView() {
   useEffect(() => {
     setDisabled(contact.id === 0);
     setId(0);
+    setPrayerRequest('');
   }, [contact]);
 
   const save = async (): Promise<PrayerRequest | null> => {
@@ -38,17 +40,40 @@ function PrayerRequestView() {
   }
 
   const findSimilarRequests = async (): Promise<PrayerRequests | null> => {
-    const pr = new PrayerRequests();
     try {
       if (id == 0) {
         throw new Error('Prayer request must be saved before finding similar requests');
       }
-      return await pr.getTopRequests(id);
+      return await new PrayerRequests().getTopRequests(id);
     } catch (error: any) {
       console.error(error);
       setErrorText(error.message);
     }
     return null;
+  }
+
+  const findSimilarBibleVerses = async (): Promise<BibleResults | null> => {
+    try {
+      if (id == 0) {
+        throw new Error('Prayer request must be saved before finding similar bible verses');
+      }
+      return await new BibleResults().getTopBibleVerses(id);
+    } catch (error: any) {
+      console.error(error);
+      setErrorText(error.message);
+    }
+    return null;
+  }
+
+  const linkPrayerRequest = async (pr: PrayerRequest): Promise<boolean> => {
+    try {
+      await pr.link(id);
+      return true;
+    } catch (error: any) {
+      console.error(error);
+      setErrorText(error.message);
+    }
+    return false;
   }
 
   return (
@@ -58,7 +83,9 @@ function PrayerRequestView() {
         <Sidebar setContact={setContact} />
         <PrayerRequestsBody save={save} id={id} contact={contact} disabled={disabled} 
           prayerRequest={prayerRequest} setPrayerRequest={setPrayerRequest} 
-          findSimilarRequests={findSimilarRequests} setId={setId} setErrorText={setErrorText}/>
+          findSimilarRequests={findSimilarRequests} setId={setId} setErrorText={setErrorText}
+          findSimilarBibleVerses={findSimilarBibleVerses}
+          linkPrayerRequest={linkPrayerRequest}/>
       </div>
     </div>
   );
@@ -73,7 +100,9 @@ type PrayerRequestBodyProps = {
   prayerRequest: string;
   setPrayerRequest: (prayerRequest: string) => void;
   findSimilarRequests: () => Promise<PrayerRequests | null>;
+  findSimilarBibleVerses: () => Promise<BibleResults | null>;
   setErrorText: (errorText: string) => void;
+  linkPrayerRequest: (pr: PrayerRequest) => Promise<boolean>;
 }
 function PrayerRequestsBody(props: PrayerRequestBodyProps) {
   const [listView, setListView] = useState(true);
@@ -128,13 +157,15 @@ function PrayerRequestsBody(props: PrayerRequestBodyProps) {
   return (
     <div className="w-3/4">
       <Header save={props.save} id={props.id} contact={props.contact} disabled={props.disabled} 
-        toggleListView={toggleListView}/>
+        toggleListView={toggleListView} setId={props.setId} />
       {listView ? 
         <PrayerList requests={prayerRequests.requests} id={props.id} editRecord ={editRecord} 
           delete={deletePrayerRequest} /> 
         :
           <MainContent prayerRequest={props.prayerRequest} setPrayerRequest={props.setPrayerRequest} 
-           findSimilarRequests={props.findSimilarRequests} disabled={props.disabled} />
+           findSimilarRequests={props.findSimilarRequests} disabled={props.disabled} 
+           findSimilarBibleVerses={props.findSimilarBibleVerses} 
+           linkPrayerRequest={props.linkPrayerRequest}/>
       }
     </div>
   );

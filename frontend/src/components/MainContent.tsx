@@ -1,30 +1,40 @@
 // src/components/MainContent.tsx
 
 import React, { useState } from 'react';
-import { PrayerRequests } from '../api/prayerRequests';
+import { PrayerRequest, PrayerRequestID, PrayerRequests } from '../api/prayerRequests';
+import { BibleResults } from '../api/bible';
+import TruncateText from './TruncateText';
 
 interface MainContentProps {
   prayerRequest: string;
   setPrayerRequest: (prayerRequest: string) => void;
   findSimilarRequests: () => Promise<PrayerRequests | null>;
+  findSimilarBibleVerses: () => Promise<BibleResults | null>;
+  linkPrayerRequest: (pr: PrayerRequest) => Promise<boolean>;
   disabled: boolean;
 }
 
 function MainContent(props: MainContentProps) {
   const [prayerRequests, setPrayerRequests] = useState<PrayerRequests>(new PrayerRequests());
+  const [bibleVerses, setBibleVerses] = useState<BibleResults>(new BibleResults());
+  const [sectionOpen, setSectionOpen] = useState<'requests' | 'verses' | null>(null);
 
   const findSimilarRequests = async () => {
-    try {
-      let newPrayerRequests = await props.findSimilarRequests();
-      if (newPrayerRequests) 
-        setPrayerRequests(newPrayerRequests);
-    } catch (error: any) {
-      console.error(error);
-    }
+    let newPrayerRequests = await props.findSimilarRequests();
+    if (newPrayerRequests)
+      setPrayerRequests(newPrayerRequests);
+    setSectionOpen('requests');
+  }
+
+  const findSimilarBibleVerses = async () => {
+    let newBibleVerses = await props.findSimilarBibleVerses();
+    if (newBibleVerses)
+      setBibleVerses(newBibleVerses);
+    setSectionOpen('verses');
   }
 
   return (
-    <div className="w-3/4">
+    <div className="w-full">
       <textarea
         value={props.prayerRequest}
         onChange={(e) => props.setPrayerRequest(e.target.value)}
@@ -37,21 +47,55 @@ function MainContent(props: MainContentProps) {
         <button onClick={findSimilarRequests} className="bg-yellow-500 text-white px-4 py-2 mr-2 rounded">
           Top Requests
         </button>
+
+        <button onClick={findSimilarBibleVerses} className="bg-green-500 text-white px-4 py-2 rounded">
+          Top Verses
+        </button>
       </div>
 
-      {prayerRequests.requests.length > 0 && <SimilarRequests prayerRequests={prayerRequests} />}
+      {sectionOpen == "requests" && <SimilarRequests prayerRequests={prayerRequests} {...props} />}
+      {sectionOpen == "verses" && <SimilarBibleVerses verses={bibleVerses} />}
     </div>
   );
 };
 
-function SimilarRequests(props: {prayerRequests: PrayerRequests}) {
+
+function SimilarRequests(props: { prayerRequests: PrayerRequests } & MainContentProps) {
+  const [selectedRequestId, setSelectedRequestId] = useState<number | null>(null);
+
+  const link = async (request: PrayerRequest) => {
+    const isSuccess = await props.linkPrayerRequest(request);
+    if (isSuccess) setSelectedRequestId(request.id);
+  }
+
   return (
     <div className="mt-4">
       <p className="text-lg font-semibold mb-2">Similar Requests</p>
       <ul>
-        {props.prayerRequests.requests.map((prayerRequest) => (
-          <li key={prayerRequest.id} className="mb-2">
+        {props.prayerRequests.requests.map((prayerRequest: PrayerRequest) => (
+          <li
+            key={prayerRequest.id}
+            onClick={() => link(prayerRequest)}
+            className={`pb-2 pt-2 cursor-pointer border-b hover:bg-blue-300 transition duration-300 ease-in-out ${
+              selectedRequestId === prayerRequest.id ? 'bg-green-200' : ''
+            }`}
+          >
             {prayerRequest.request}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function SimilarBibleVerses(props: { verses: BibleResults }) {
+  return (
+    <div className="mt-4">
+      <p className="text-lg font-semibold mb-2">Similar Bible Verses</p>
+      <ul>
+        {props.verses.results.map((verse, index: number) => (
+          <li key={index} className="pb-2 pt-2 border-b">
+            <TruncateText text={`${verse.Context()} - ${verse.Text()}`} limit={200} />
           </li>
         ))}
       </ul>

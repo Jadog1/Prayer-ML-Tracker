@@ -43,10 +43,10 @@ class PrayerRequestRepoImpl(PrayerRequestRepo):
         self.pool = session
         self.model = model
 
-    def get(self, account_id:int, request_id:int)->PrayerRequest:
+    def get(self, account_id:int, request_id:int, include_embeddings=False)->PrayerRequest:
         with self.pool() as session:
             request = session.query(PrayerRequestORM).filter(PrayerRequestORM.account_id == account_id, PrayerRequestORM.id == request_id).first()
-            return PrayerRequest(request)
+            return PrayerRequest(request, includeEmbeddings=include_embeddings)
 
     def get_all(self, account_id:int)->PrayerRequests:
         with self.pool() as session:

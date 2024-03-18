@@ -66,7 +66,7 @@ function SidebarGroups(props: SidebarGroupsProps) {
                 {props.contacts 
                   .filter((contact) => contact.group.id === group.id)
                   .map((contact) => (
-                    <li key={contact.id} className="mb-2 cursor-pointer border-b hover:bg-blue-300 transition duration-300 ease-in-out" onClick={() => props.setContact(contact)}>
+                    <li key={contact.id} className="pb-2 pt-2 cursor-pointer border-b hover:bg-blue-300 transition duration-300 ease-in-out" onClick={() => props.setContact(contact)}>
                       {contact.name}
                     </li>
                   ))}

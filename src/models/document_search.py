@@ -1,4 +1,5 @@
 from typing import Union
+import numpy as np
 from sentence_transformers import SentenceTransformer, util
 import pandas as pd
 import torch
@@ -23,7 +24,11 @@ class Corpus(ABC):
     def get_row_text(self, index : int, max_length : int = None)->str:
         pass
 
-class BibleCorpus(Corpus):
+    @abstractmethod
+    def get_row_object(self, index : int)->dict:
+        pass
+
+class BibleVerseCorpus(Corpus):
     def __init__(self, corpus: pd.DataFrame, text_column: str, max_length: int = 0):
         self.df = corpus
         self.corpus_text = self.df[text_column].tolist()
@@ -31,18 +36,59 @@ class BibleCorpus(Corpus):
         self.max_length = max_length
 
     def _get_row_bible_context(self, row: pd.Series)->str:
-        if 'VerseNumberStart' in row:
-            return f"{row['Book']} {row['Chapter']}:{row['VerseNumberStart']}-{row['VerseNumberEnd']}"
-        elif 'Verse' not in row:
-            return f"{row['Book']} {row['Chapter']}"
-        else:
-            return f"{row['Book']} {row['Chapter']}:{row['Verse']}"
+        return f"{row['Book']} {row['Chapter']}:{row['Verse']}"
+        
+    def _get_row_object(self, row: pd.Series)->dict:
+        result = {
+            "text": row[self.text_column],
+            "book": row['Book'],
+            "chapter": int(row["Chapter"]),
+            "verse": int(row["Verse"]),
+            "type": "verse"
+        }
+        return result
         
     def get_row_text(self, index : int, max_length : int = None)->str:
         row = self.df.iloc[index]
         bibleContext = self._get_row_bible_context(row)
         verse = self._cut_text(row[self.text_column], max_length)
         return f"{bibleContext} - {verse}"
+    
+    def get_row_object(self, index : int)->dict:
+        row = self.df.iloc[index]
+        return self._get_row_object(row)
+
+class BibleSectionCorpus(Corpus):
+    def __init__(self, corpus: pd.DataFrame, text_column: str, max_length: int = 0):
+        self.df = corpus
+        self.corpus_text = self.df[text_column].tolist()
+        self.text_column = text_column
+        self.max_length = max_length
+
+    def _get_row_bible_context(self, row: pd.Series)->str:
+        return f"{row['Book']} {row['Chapter']}:{row['VerseNumberStart']} - {row['VerseNumberEnd']}"
+    
+    def _get_row_object(self, row: pd.Series)->dict:
+        result = {
+            "text": row[self.text_column],
+            "book": row['Book'],
+            "chapter": int(row["Chapter"]),
+            "start_verse": int(row["VerseNumberStart"]),
+            "end_verse": int(row["VerseNumberEnd"]),
+            "type": "section"
+        }
+        return result
+
+    def get_row_text(self, index : int, max_length : int = None)->str:
+        row = self.df.iloc[index]
+        bibleContext = self._get_row_bible_context(row)
+        section = self._cut_text(row[self.text_column], max_length)
+        return f"{bibleContext} - {section}"
+    
+    def get_row_object(self, index : int)->dict:
+        row = self.df.iloc[index]
+        return self._get_row_object(row)
+    
 
 class PrayerRequestCorpus(Corpus):
     def __init__(self, corpus: pd.DataFrame, max_length: int = 0):
@@ -72,11 +118,11 @@ class Embedder(ABC):
         pass
     
     @abstractmethod
-    def load(self)->list[torch.Tensor]:
+    def load(self)->np.ndarray:
         pass
 
     @abstractmethod
-    def calculate_embeddings(self, corpus: Union[list[str], str] = None)->list[torch.Tensor]:
+    def calculate_embeddings(self, corpus: Union[list[str], str] = None)->np.ndarray:
         pass
 
     def set_data(self, name: str, corpus: Corpus):
@@ -102,22 +148,23 @@ class HugfaceEmbedder(Embedder):
                 pickle.dump(self.embeddings, file)
         return self.embeddings
     
-    def load(self)->list[torch.Tensor]:
+    def load(self)->list[np.ndarray]:
         if self._should_cache():
             return self._cache_embeddings()
         
         try:
             with open(self._file_name(), 'rb') as file:
                 self.embeddings= pickle.load(file)
-        except:
+        except Exception as e:
             self._cache_embeddings()
+            print(e)
         return self.embeddings
     
-    def calculate_embeddings(self, corpus:Union[list[str], str] = None)->list[torch.Tensor]:
+    def calculate_embeddings(self, corpus:Union[list[str], str] = None)->np.ndarray:
         if corpus is None:
             corpus = self.corpus
         isList = type(corpus) is list
-        embeddings = self.embedder.encode(corpus, show_progress_bar=isList)
+        embeddings = self.embedder.encode(corpus, show_progress_bar=isList, convert_to_numpy=True)
         return embeddings
     
 class TopResults():
@@ -135,11 +182,12 @@ class TopResults():
             print(corpusText, "(Score: {:.4f})".format(score))
         return self
     
-    def get_results(self, max_length = None):
+    def get_results(self)->list[dict]:
         results = []
         for score, idx in zip(self.scores, self.indices):
-            corpusText = self.corpus.get_row_text(int(idx), max_length)
-            results.append((corpusText, score))
+            obj = self.corpus.get_row_object(int(idx))
+            obj["score"] = float(score)
+            results.append(obj)
         return results
 
 
@@ -156,19 +204,23 @@ class DocumentSearch(ABC):
         
         
 class DocumentSearchCosSim(DocumentSearch):
-    def find_similar(self, query, top_k=5)->TopResults:
-        query_embedding = self.embedder.calculate_embeddings(query)
-
-        cos_scores = util.pytorch_cos_sim(query_embedding, self.embeddings)[0]
+    def find_similar(self, query: Union[str, np.ndarray], top_k=5)->TopResults:
+        query_embedding = query if isinstance(query, np.ndarray) else self.embedder.calculate_embeddings(query)
+        if len(self.embeddings) == 0:
+            raise ValueError("No embeddings to compare to") 
+        
+        cos_scores = util.pytorch_cos_sim(torch.from_numpy(query_embedding), self.embeddings)[0]
         top_results = torch.topk(cos_scores, k=top_k, largest=True)
         
         return TopResults(self.corpus, top_results.indices.tolist(), top_results.values.tolist())
     
 class DocumentSearchDotProd(DocumentSearch):
-    def find_similar(self, query, top_k=5)->TopResults:
-        query_embedding = self.embedder.calculate_embeddings(query)
+    def find_similar(self, query: Union[str, np.ndarray], top_k=5)->TopResults:
+        query_embedding = query if isinstance(query, np.ndarray) else self.embedder.calculate_embeddings(query)
+        if len(self.embeddings) == 0:
+            raise ValueError("No embeddings to compare to") 
 
-        dot_product = util.dot_score(query_embedding, self.embeddings)[0]
+        dot_product = util.dot_score(torch.from_numpy(query_embedding), self.embeddings)[0]
         top_results = torch.topk(dot_product, k=top_k, largest=True)
         
         return TopResults(self.corpus, list(top_results.indices), list(top_results.values))
