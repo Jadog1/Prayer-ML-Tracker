@@ -6,11 +6,12 @@ import { Contact } from '../api/contacts';
 
 
 type HeaderProps = {
-  save: () => void;
+  deletePr: () => void;
   id: PrayerRequestID;
-  setId: (id: PrayerRequestID) => void;
+  createNewPrayerRequest: () => void;
   contact: Contact;
   disabled: boolean;
+  listView: boolean;
   toggleListView: () => void;
 };
 function Header(props: HeaderProps) {
@@ -22,17 +23,18 @@ function Header(props: HeaderProps) {
       {props.contact.name &&
         <>
           <p className="text-2xl font-bolder text-black">{props.contact.name}</p>
-          <button onClick={() => props.toggleListView()} className="bg-blue-500 text-white px-4 py-2 rounded">
-            Toggle List View
-          </button>
+          {!props.listView && <button onClick={() => props.toggleListView()} className="bg-blue-500 text-white px-4 py-2 rounded">
+            Go back
+          </button>}
 
-          {props.id > 0 && <button onClick={() => props.setId(0)} className="bg-green-500 text-white px-4 py-2 rounded">
+          {(props.id > 0 || props.listView) && <button onClick={() => props.createNewPrayerRequest()} className="bg-green-500 text-white px-4 py-2 rounded">
             New
-          </button> }
+          </button>}
 
-          <button onClick={() => props.save()} className="bg-blue-500 text-white px-4 py-2 rounded" disabled={props.disabled}>
-            {props.id ? 'Update' : 'Save'}
+          {!props.listView && <button onClick={() => props.deletePr()} className="bg-blue-500 text-white px-4 py-2 rounded" disabled={props.disabled}>
+            Delete
           </button>
+          }
         </>
       }
     </div>

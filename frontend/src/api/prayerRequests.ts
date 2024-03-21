@@ -67,7 +67,6 @@ class PrayerRequest {
             throw new Error(`Failed to save: ${message}`);
         }
         const json = await response.json();
-        console.log(json);
         this.id = json.id;
         return this.id;
     }

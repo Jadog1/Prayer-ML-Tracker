@@ -23,11 +23,11 @@ function PrayerRequestView() {
     setPrayerRequest('');
   }, [contact]);
 
-  const save = async (): Promise<PrayerRequest | null> => {
+  const save = async (overridePrayerRequest : string = ""): Promise<PrayerRequest | null> => {
     const pr = new PrayerRequest();
     pr.id = id;
     pr.contact = contact;
-    pr.request = prayerRequest;
+    pr.request = overridePrayerRequest || prayerRequest;
     try {
       let newId = await pr.save();
       setId(newId);
@@ -37,6 +37,21 @@ function PrayerRequestView() {
       setErrorText(error.message);
     }
     return null
+  }
+
+  const deletePr = async () => {
+    if (id > 0) {
+      try {
+        let pr = new PrayerRequest();
+        pr.id = id;
+        await pr.delete();
+        setId(0);
+        setPrayerRequest('');
+      } catch (error: any) {
+        console.error(error);
+        setErrorText(error.message);
+      }
+    }
   }
 
   const findSimilarRequests = async (): Promise<PrayerRequests | null> => {
@@ -84,7 +99,7 @@ function PrayerRequestView() {
         <PrayerRequestsBody save={save} id={id} contact={contact} disabled={disabled} 
           prayerRequest={prayerRequest} setPrayerRequest={setPrayerRequest} 
           findSimilarRequests={findSimilarRequests} setId={setId} setErrorText={setErrorText}
-          findSimilarBibleVerses={findSimilarBibleVerses}
+          findSimilarBibleVerses={findSimilarBibleVerses} deletePr={deletePr}
           linkPrayerRequest={linkPrayerRequest}/>
       </div>
     </div>
@@ -92,7 +107,7 @@ function PrayerRequestView() {
 };
 
 type PrayerRequestBodyProps = {
-  save: () => Promise<PrayerRequest | null>;
+  save: (overridePrayerRequest?: string) => Promise<PrayerRequest | null>;
   id: number;
   setId: (id: number) => void;
   contact: Contact;
@@ -103,6 +118,7 @@ type PrayerRequestBodyProps = {
   findSimilarBibleVerses: () => Promise<BibleResults | null>;
   setErrorText: (errorText: string) => void;
   linkPrayerRequest: (pr: PrayerRequest) => Promise<boolean>;
+  deletePr : () => Promise<void>;
 }
 function PrayerRequestsBody(props: PrayerRequestBodyProps) {
   const [listView, setListView] = useState(true);
@@ -141,30 +157,45 @@ function PrayerRequestsBody(props: PrayerRequestBodyProps) {
   const deletePrayerRequest = async (pr: PrayerRequest) => {
     try {
       await pr.delete();
-      setPrayerRequests(prayerRequests);
+      loadPrayerRequests();
     } catch (error: any) {
       console.error(error);
       props.setErrorText(error.message);
     }
   }
 
+  const createNewPrayerRequest = () => {
+    props.setPrayerRequest('');
+    let result = props.save();
+    if (result != null) setListView(false);
+  }
+
   const toggleListView = () => {
-    if (!listView) props.setId(0);
+    if (!listView) {
+      props.setId(0);
+      loadPrayerRequests();
+    }
     setListView(!listView);
+  }
+
+  const deletePr = async () => {
+    await props.deletePr();
+    toggleListView();
   }
 
 
   return (
     <div className="w-3/4">
-      <Header save={props.save} id={props.id} contact={props.contact} disabled={props.disabled} 
-        toggleListView={toggleListView} setId={props.setId} />
+      <Header deletePr={deletePr} id={props.id} contact={props.contact} disabled={props.disabled} 
+        listView={listView}
+        toggleListView={toggleListView} createNewPrayerRequest={createNewPrayerRequest} />
       {listView ? 
         <PrayerList requests={prayerRequests.requests} id={props.id} editRecord ={editRecord} 
           delete={deletePrayerRequest} /> 
         :
           <MainContent prayerRequest={props.prayerRequest} setPrayerRequest={props.setPrayerRequest} 
-           findSimilarRequests={props.findSimilarRequests} disabled={props.disabled} 
-           findSimilarBibleVerses={props.findSimilarBibleVerses} 
+           findSimilarRequests={props.findSimilarRequests} disabled={props.id == 0} 
+           findSimilarBibleVerses={props.findSimilarBibleVerses} save={props.save}
            linkPrayerRequest={props.linkPrayerRequest}/>
       }
     </div>
