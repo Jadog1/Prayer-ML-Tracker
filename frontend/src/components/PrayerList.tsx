@@ -28,6 +28,7 @@ function PrayerList(props: PrayerListProps) {
             <table className="w-full h-full overflow-auto">
                 <thead>
                     <tr>
+                        <th className="text-center">Date</th>
                         <th className="text-center">Prayer Request</th>
                         <th className="text-center">Actions</th>
                     </tr>
@@ -35,6 +36,9 @@ function PrayerList(props: PrayerListProps) {
                 <tbody>
                     {props.requests.map((prayerRequest) => (
                         <tr key={prayerRequest.id} className="border-t" style={{ height: '75px' }}>
+                            <td className="p-2">
+                                {new Date(prayerRequest.created_at).toLocaleDateString()}
+                            </td>
                             <td className="p-2">
                                 <TruncateText text={prayerRequest.request} limit={100} />
                             </td>

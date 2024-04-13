@@ -15,6 +15,8 @@ class PrayerRequest():
             self.name = prayerRequest.contact.name if prayerRequest.contact else None
             self.group = prayerRequest.contact.group.name if prayerRequest.contact.group else None
             self.link_id = prayerRequest.link_id
+            self.created_at = prayerRequest.created_at
+            self.updated_at = prayerRequest.updated_at
             if includeEmbeddings:
                 self.embeddings = EmbeddingResult(prayerRequest.gte_base_embedding, prayerRequest.msmarco_base_embedding)
     
@@ -33,6 +35,8 @@ class PrayerRequest():
             'archived_at': self.archived_at,
             'link_id': self.link_id,
             'id': self.id,
+            'created_at': self.created_at,
+            'updated_at': self.updated_at
         }
     
     def from_dict(self, data: dict)->'PrayerRequest':

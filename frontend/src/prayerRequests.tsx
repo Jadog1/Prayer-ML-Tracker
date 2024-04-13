@@ -9,6 +9,7 @@ import { Contact } from './api/contacts';
 import ErrorMessage from './components/errorBubble';
 import PrayerList from './components/PrayerList';
 import { BibleResults } from './api/bible';
+import { over } from 'lodash';
 
 function PrayerRequestView() {
   const [errorText, setErrorText] = useState('');
@@ -23,9 +24,9 @@ function PrayerRequestView() {
     setPrayerRequest('');
   }, [contact]);
 
-  const save = async (overridePrayerRequest : string = ""): Promise<PrayerRequest | null> => {
+  const save = async (overridePrayerRequest : string = "", overridePrayerID : number = 0): Promise<PrayerRequest | null> => {
     const pr = new PrayerRequest();
-    pr.id = id;
+    pr.id = overridePrayerID || id;
     pr.contact = contact;
     pr.request = overridePrayerRequest || prayerRequest;
     try {
@@ -107,7 +108,7 @@ function PrayerRequestView() {
 };
 
 type PrayerRequestBodyProps = {
-  save: (overridePrayerRequest?: string) => Promise<PrayerRequest | null>;
+  save: (overridePrayerRequest?: string, overridePrayerID?: number) => Promise<PrayerRequest | null>;
   id: number;
   setId: (id: number) => void;
   contact: Contact;
@@ -166,7 +167,8 @@ function PrayerRequestsBody(props: PrayerRequestBodyProps) {
 
   const createNewPrayerRequest = () => {
     props.setPrayerRequest('');
-    let result = props.save();
+    props.setId(0);
+    let result = props.save("", 0);
     if (result != null) setListView(false);
   }
 

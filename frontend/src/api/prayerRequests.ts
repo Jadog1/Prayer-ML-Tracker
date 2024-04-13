@@ -11,6 +11,8 @@ class PrayerRequest {
     public archived_at: string;
     public link_id: number;
     public id: PrayerRequestID;
+    public created_at: string;
+    public updated_at: string;
 
     constructor() {
         this.account_id = 0;
@@ -19,6 +21,8 @@ class PrayerRequest {
         this.archived_at = '';
         this.link_id = 0;
         this.id = 0;
+        this.created_at = '';
+        this.updated_at = '';
     }
 
     public static fromJson(json: any): PrayerRequest {
@@ -42,6 +46,8 @@ class PrayerRequest {
         p.archived_at = json.archived_at;
         p.link_id = json.link_id;
         p.id = json.id;
+        p.created_at = json.created_at;
+        p.updated_at = json.updated_at;
         return p;
     }
 

@@ -50,7 +50,7 @@ class PrayerRequestRepoImpl(PrayerRequestRepo):
 
     def get_all(self, account_id:int)->PrayerRequests:
         with self.pool() as session:
-            requests = session.query(PrayerRequestORM).filter(PrayerRequestORM.account_id == account_id).all()
+            requests = session.query(PrayerRequestORM).filter(PrayerRequestORM.account_id == account_id).all().sort(PrayerRequestORM.updated_at.desc())
             return self._to_prayer_requests(requests)
 
     def get_contact(self, account_id:int, contact_id: int)->PrayerRequests:
