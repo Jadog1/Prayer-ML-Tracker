@@ -10,148 +10,70 @@ import ErrorMessage from './components/errorBubble';
 import PrayerList from './components/PrayerList';
 import { BibleResults } from './api/bible';
 import { over } from 'lodash';
+import { PrayerRequestCRUD, PrayerRequestCRUDType } from './util/prayerRequestProperties';
+
+export type errorHandler = (error: string) => void;
+export const ErrorHandlerContext = React.createContext<errorHandler>((error: string) => { });
 
 function PrayerRequestView() {
   const [errorText, setErrorText] = useState('');
-  const [id, setId] = useState(0);
-  const [prayerRequest, setPrayerRequest] = useState('');
-  const [contact, setContact] = useState<Contact>(new Contact());
-  const [disabled, setDisabled] = useState(false);
-
-  useEffect(() => {
-    setDisabled(contact.id === 0);
-    setId(0);
-    setPrayerRequest('');
-  }, [contact]);
-
-  const save = async (overridePrayerRequest : string = "", overridePrayerID : number = 0): Promise<PrayerRequest | null> => {
-    const pr = new PrayerRequest();
-    pr.id = overridePrayerID || id;
-    pr.contact = contact;
-    pr.request = overridePrayerRequest || prayerRequest;
-    try {
-      let newId = await pr.save();
-      setId(newId);
-      return pr;
-    } catch (error: any) {
-      console.error(error);
-      setErrorText(error.message);
-    }
-    return null
-  }
-
-  const deletePr = async () => {
-    if (id > 0) {
-      try {
-        let pr = new PrayerRequest();
-        pr.id = id;
-        await pr.delete();
-        setId(0);
-        setPrayerRequest('');
-      } catch (error: any) {
-        console.error(error);
-        setErrorText(error.message);
-      }
-    }
-  }
-
-  const findSimilarRequests = async (): Promise<PrayerRequests | null> => {
-    try {
-      if (id == 0) {
-        throw new Error('Prayer request must be saved before finding similar requests');
-      }
-      return await new PrayerRequests().getTopRequests(id);
-    } catch (error: any) {
-      console.error(error);
-      setErrorText(error.message);
-    }
-    return null;
-  }
-
-  const findSimilarBibleVerses = async (): Promise<BibleResults | null> => {
-    try {
-      if (id == 0) {
-        throw new Error('Prayer request must be saved before finding similar bible verses');
-      }
-      return await new BibleResults().getTopBibleVerses(id);
-    } catch (error: any) {
-      console.error(error);
-      setErrorText(error.message);
-    }
-    return null;
-  }
-
-  const linkPrayerRequest = async (pr: PrayerRequest): Promise<boolean> => {
-    try {
-      await pr.link(id);
-      return true;
-    } catch (error: any) {
-      console.error(error);
-      setErrorText(error.message);
-    }
-    return false;
-  }
+  const prayerRequestCRUD = PrayerRequestCRUD(setErrorText);
 
   return (
-    <div className="container mx-auto p-4">
-      {errorText && <ErrorMessage message={errorText} onClose={() => setErrorText("")} />}
-      <div className="flex">
-        <Sidebar setContact={setContact} />
-        <PrayerRequestsBody save={save} id={id} contact={contact} disabled={disabled} 
-          prayerRequest={prayerRequest} setPrayerRequest={setPrayerRequest} 
-          findSimilarRequests={findSimilarRequests} setId={setId} setErrorText={setErrorText}
-          findSimilarBibleVerses={findSimilarBibleVerses} deletePr={deletePr}
-          linkPrayerRequest={linkPrayerRequest}/>
+    <ErrorHandlerContext.Provider value={setErrorText}>
+      <div className="container mx-auto p-4">
+        {errorText && <ErrorMessage message={errorText} onClose={() => setErrorText("")} />}
+        <div className="flex">
+          <Sidebar setContact={prayerRequestCRUD.properties.setContact} />
+          <PrayerRequestsBody prayerRequestCRUD={prayerRequestCRUD} />
+        </div>
       </div>
-    </div>
+    </ErrorHandlerContext.Provider>
   );
 };
 
+
 type PrayerRequestBodyProps = {
-  save: (overridePrayerRequest?: string, overridePrayerID?: number) => Promise<PrayerRequest | null>;
-  id: number;
-  setId: (id: number) => void;
-  contact: Contact;
-  disabled: boolean;
-  prayerRequest: string;
-  setPrayerRequest: (prayerRequest: string) => void;
-  findSimilarRequests: () => Promise<PrayerRequests | null>;
-  findSimilarBibleVerses: () => Promise<BibleResults | null>;
-  setErrorText: (errorText: string) => void;
-  linkPrayerRequest: (pr: PrayerRequest) => Promise<boolean>;
-  deletePr : () => Promise<void>;
+  prayerRequestCRUD: PrayerRequestCRUDType;
 }
 function PrayerRequestsBody(props: PrayerRequestBodyProps) {
   const [listView, setListView] = useState(true);
   const [prayerRequests, setPrayerRequests] = useState<PrayerRequests>(new PrayerRequests());
+  const setErrorText = React.useContext(ErrorHandlerContext);
+  const crudProps = props.prayerRequestCRUD.properties;
+  const [disabled, setDisabled] = useState(false);
+
+  useEffect(() => {
+   setDisabled(crudProps.contact.id === 0);
+  }, [crudProps.contact]);
 
   useEffect(() => {
     loadPrayerRequests()
     setListView(true);
-  }, [props.contact]);
+  }, [crudProps.contact]);
 
   const editRecord = async (id: number) => {
     try {
       let pr = await new PrayerRequest().load(id);
-      props.setId(id);
-      props.setPrayerRequest(pr.request);
+      crudProps.setId(id);
+      crudProps.setPrayerRequest(pr.request);
       setListView(false);
     } catch (error: any) {
       console.error(error);
-      props.setErrorText(error.message);
+      setErrorText(error.message);
     }
   }
 
   const loadPrayerRequests = async () => {
     try {
-      if (props.contact.id) {
+      if (crudProps.contact.id) {
         let pr = new PrayerRequests()
-        let prayerRequests = await pr.getRequestsForContact(props.contact.id);
+        let prayerRequests = await pr.getRequestsForContact(crudProps.contact.id);
         if (prayerRequests) setPrayerRequests(pr);
       }
     } catch (error: any) {
       console.error(error);
-      props.setErrorText(error.message);
+      setErrorText(error.message);
     }
   }
 
@@ -161,44 +83,42 @@ function PrayerRequestsBody(props: PrayerRequestBodyProps) {
       loadPrayerRequests();
     } catch (error: any) {
       console.error(error);
-      props.setErrorText(error.message);
+      setErrorText(error.message);
     }
   }
 
   const createNewPrayerRequest = () => {
-    props.setPrayerRequest('');
-    props.setId(0);
-    let result = props.save("", 0);
+    crudProps.setPrayerRequest('');
+    crudProps.setId(0);
+    let result = props.prayerRequestCRUD.save(0, "");
     if (result != null) setListView(false);
   }
 
   const toggleListView = () => {
     if (!listView) {
-      props.setId(0);
+      crudProps.setId(0);
       loadPrayerRequests();
     }
     setListView(!listView);
   }
 
   const deletePr = async () => {
-    await props.deletePr();
+    await props.prayerRequestCRUD.deletePr();
     toggleListView();
   }
 
 
   return (
     <div className="w-3/4">
-      <Header deletePr={deletePr} id={props.id} contact={props.contact} disabled={props.disabled} 
-        listView={listView}
-        toggleListView={toggleListView} createNewPrayerRequest={createNewPrayerRequest} />
-      {listView ? 
-        <PrayerList requests={prayerRequests.requests} id={props.id} editRecord ={editRecord} 
-          delete={deletePrayerRequest} /> 
+      <Header deletePr={deletePr} disabled={disabled} listView={listView}
+        toggleListView={toggleListView} createNewPrayerRequest={createNewPrayerRequest} 
+        prayerRequestCRUDProps={crudProps}/>
+      {listView ?
+        <PrayerList requests={prayerRequests.requests} id={crudProps.id} editRecord={editRecord}
+          delete={deletePrayerRequest} />
         :
-          <MainContent prayerRequest={props.prayerRequest} setPrayerRequest={props.setPrayerRequest} 
-           findSimilarRequests={props.findSimilarRequests} disabled={props.id == 0} 
-           findSimilarBibleVerses={props.findSimilarBibleVerses} save={props.save}
-           linkPrayerRequest={props.linkPrayerRequest}/>
+        <MainContent prayerRequestCRUD={props.prayerRequestCRUD}
+          disabled={crudProps.id == 0} />
       }
     </div>
   );

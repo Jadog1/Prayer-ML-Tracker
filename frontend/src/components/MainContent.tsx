@@ -1,20 +1,50 @@
 // src/components/MainContent.tsx
 
-import React, { useState } from 'react';
+import React, { useContext, useState } from 'react';
 import { PrayerRequest, PrayerRequestID, PrayerRequests } from '../api/prayerRequests';
 import { BibleResults } from '../api/bible';
 import TruncateText from './TruncateText';
 import _debounce from 'lodash/debounce';
+import { ErrorHandlerContext } from '../prayerRequests';
+import { PrayerRequestCRUDType } from '../util/prayerRequestProperties';
+
+
+
+function findSimimlar(setErrorText: (error: string) => void) {
+
+  const findSimilarRequestsHandler = async (id: PrayerRequestID): Promise<PrayerRequests | null> => {
+    try {
+      if (id == 0) {
+        throw new Error('Prayer request must be saved before finding similar requests');
+      }
+      return await new PrayerRequests().getTopRequests(id);
+    } catch (error: any) {
+      console.error(error);
+      setErrorText(error.message);
+    }
+    return null;
+  }
+
+  const findSimilarBibleVersesHandler = async (id: PrayerRequestID): Promise<BibleResults | null> => {
+    try {
+      if (id == 0) {
+        throw new Error('Prayer request must be saved before finding similar bible verses');
+      }
+      return await new BibleResults().getTopBibleVerses(id);
+    } catch (error: any) {
+      console.error(error);
+      setErrorText(error.message);
+    }
+    return null;
+  }
+
+  return { findSimilarRequestsHandler, findSimilarBibleVersesHandler };
+}
 
 let timeoutId: NodeJS.Timeout | undefined;
 interface MainContentProps {
-  prayerRequest: string;
-  setPrayerRequest: (prayerRequest: string) => void;
-  findSimilarRequests: () => Promise<PrayerRequests | null>;
-  findSimilarBibleVerses: () => Promise<BibleResults | null>;
-  linkPrayerRequest: (pr: PrayerRequest) => Promise<boolean>;
+  prayerRequestCRUD: PrayerRequestCRUDType
   disabled: boolean;
-  save: (overridePrayerRequest?: string) => Promise<PrayerRequest | null>;
 }
 
 function MainContent(props: MainContentProps) {
@@ -22,23 +52,27 @@ function MainContent(props: MainContentProps) {
   const [bibleVerses, setBibleVerses] = useState<BibleResults>(new BibleResults());
   const [updatedTimestamp, setUpdatedTimestamp] = useState<string>('');
   const [sectionOpen, setSectionOpen] = useState<'requests' | 'verses'>('requests');
+  const setErrorText = useContext(ErrorHandlerContext);
+  const { findSimilarRequestsHandler, findSimilarBibleVersesHandler } = findSimimlar(setErrorText);
+  const prayerCRUD = props.prayerRequestCRUD;
+  const prayerCRUDProps = prayerCRUD.properties;
 
   const findSimilarRequests = async () => {
-    let newPrayerRequests = await props.findSimilarRequests();
+    let newPrayerRequests = await findSimilarRequestsHandler(prayerCRUDProps.id);
     if (newPrayerRequests)
       setPrayerRequests(newPrayerRequests);
     setSectionOpen('requests');
   }
 
   const findSimilarBibleVerses = async () => {
-    let newBibleVerses = await props.findSimilarBibleVerses();
+    let newBibleVerses = await findSimilarBibleVersesHandler(prayerCRUDProps.id);
     if (newBibleVerses)
       setBibleVerses(newBibleVerses);
     setSectionOpen('verses');
   }
 
   const handleSave = async (newRequest: string) => {
-    let pr = await props.save(newRequest);
+    let pr = await prayerCRUD.save(prayerCRUDProps.id, newRequest);
     if (pr == null) return;
     setUpdatedTimestamp(new Date().toLocaleTimeString());
 
@@ -61,8 +95,8 @@ function MainContent(props: MainContentProps) {
   return (
     <div className="w-full">
       <textarea
-        value={props.prayerRequest}
-        onChange = {(e) => props.setPrayerRequest(e.target.value)}
+        value={prayerCRUDProps.prayerRequest}
+        onChange = {(e) => prayerCRUDProps.setPrayerRequest(e.target.value)}
         onKeyUp={(e) => {
           const target = e.target as HTMLTextAreaElement;
           setPrayerRequest(target.value);
@@ -86,18 +120,30 @@ function MainContent(props: MainContentProps) {
         </button>
       </div>
 
-      {sectionOpen == "requests" && <SimilarRequests prayerRequests={prayerRequests} {...props} />}
+      {sectionOpen == "requests" && <SimilarRequests existingID={prayerCRUDProps.id} prayerRequests={prayerRequests} {...props} />}
       {sectionOpen == "verses" && <SimilarBibleVerses verses={bibleVerses} />}
     </div>
   );
 };
 
 
-function SimilarRequests(props: { prayerRequests: PrayerRequests } & MainContentProps) {
+function SimilarRequests(props: { prayerRequests: PrayerRequests, existingID: PrayerRequestID } & MainContentProps) {
   const [selectedRequestId, setSelectedRequestId] = useState<number | null>(null);
+  const setErrorText = useContext(ErrorHandlerContext);
+
+  const linkPrayerRequest = async (pr: PrayerRequest): Promise<boolean> => {
+    try {
+      await pr.link(props.existingID);
+      return true;
+    } catch (error: any) {
+      console.error(error);
+      setErrorText(error.message);
+    }
+    return false;
+  }
 
   const link = async (request: PrayerRequest) => {
-    let isSuccess = await props.linkPrayerRequest(request);
+    let isSuccess = await linkPrayerRequest(request);
     if (isSuccess) setSelectedRequestId(request.id);
   }
 
@@ -143,5 +189,7 @@ function SimilarBibleVerses(props: { verses: BibleResults }) {
     </div>
   );
 }
+
+
 
 export default MainContent;

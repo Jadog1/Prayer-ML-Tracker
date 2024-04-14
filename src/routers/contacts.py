@@ -1,5 +1,6 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 
+from src.dto.contacts import Contact
 from src.framework.app import App
 from ..repo.contacts import ContactRepoImpl
 
@@ -13,6 +14,7 @@ class ContactRoute():
         self.router = APIRouter()
         self.router.add_api_route("/", self.get_contacts, methods=["GET"])
         self.router.add_api_route("/groups", self.get_groups, methods=["GET"])
+        self.router.add_api_route("/", self.add_contact, methods=["POST"])
 
     def get_contacts(self):
         results = self.repo.get_all(account_id)
@@ -21,3 +23,12 @@ class ContactRoute():
     def get_groups(self):
         results = self.repo.get_groups(account_id)
         return results.to_list()
+    
+    def add_contact(self, data: dict):
+        contact = Contact().from_dict(data)
+        try:
+            newId = self.repo.save_contact(account_id, contact)
+        except Exception as e:
+            self.app.Logger().error(f"Error saving contact: {e}", error=e, data=contact.to_dict())
+            raise HTTPException(status_code=400, detail="Error saving contact")
+        return {"id": newId}
