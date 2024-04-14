@@ -150,7 +150,7 @@ function SimilarRequests(props: { prayerRequests: PrayerRequests, existingID: Pr
   let uniqueLinkIdColors: { [id: number]: string } = {};
   props.prayerRequests.requests.forEach((prayerRequest: PrayerRequest) => {
     if (!(prayerRequest.id in uniqueLinkIdColors)) {
-      uniqueLinkIdColors[prayerRequest.id] = `#${Math.floor(Math.random()*16777215).toString(16)}`;
+      uniqueLinkIdColors[prayerRequest.link_id] = `#${Math.floor(Math.random()*16777215).toString(16)}`;
     }
   });
 
@@ -166,8 +166,18 @@ function SimilarRequests(props: { prayerRequests: PrayerRequests, existingID: Pr
               selectedRequestId === prayerRequest.id ? 'bg-green-200' : ''
             }`}
           >
-            {prayerRequest.link_id > 0 && <span className="mr-2" style={{ color: uniqueLinkIdColors[prayerRequest.link_id] }}>[]</span>}
-            {prayerRequest.request}
+            <div className="flex items-stretch gap-x-1">
+            {prayerRequest.link_id > 0 && 
+              <div
+              className="flex-none w-3 self-stretch"
+              style={{
+                backgroundColor: uniqueLinkIdColors[prayerRequest.link_id],
+              }}>
+                {prayerRequest.link_id}
+              </div>
+            }
+            <div className="flex-1">{prayerRequest.request}</div>
+            </div>
           </li>
         ))}
       </ul>
