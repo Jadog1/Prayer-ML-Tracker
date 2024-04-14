@@ -12,7 +12,8 @@ import { BibleResults } from './api/bible';
 import { over } from 'lodash';
 import { PrayerRequestCRUD, PrayerRequestCRUDType } from './util/prayerRequestProperties';
 
-export const ErrorHandlerContext = React.createContext((error: string) => { });
+export type errorHandler = (error: string) => void;
+export const ErrorHandlerContext = React.createContext<errorHandler>((error: string) => { });
 
 function PrayerRequestView() {
   const [errorText, setErrorText] = useState('');

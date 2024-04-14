@@ -50,14 +50,14 @@ class PrayerRequestRepoImpl(PrayerRequestRepo):
 
     def get_all(self, account_id:int)->PrayerRequests:
         with self.pool() as session:
-            requests = session.query(PrayerRequestORM).filter(PrayerRequestORM.account_id == account_id).all().sort(PrayerRequestORM.updated_at.desc())
+            requests = session.query(PrayerRequestORM).filter(PrayerRequestORM.account_id == account_id).all().sort(PrayerRequestORM.created_at.desc())
             return self._to_prayer_requests(requests)
 
     def get_contact(self, account_id:int, contact_id: int)->PrayerRequests:
         with self.pool() as session:
             requests = session.query(PrayerRequestORM).filter(
                 PrayerRequestORM.account_id == account_id, PrayerRequestORM.contact_id == contact_id
-                ).order_by(PrayerRequestORM.updated_at.desc()).all()
+                ).order_by(PrayerRequestORM.created_at.desc()).all()
             return self._to_prayer_requests(requests)
 
     def get_daterange(self, account_id:int, start:str, end:str)->PrayerRequests:
@@ -118,13 +118,14 @@ class PrayerRequestRepoImpl(PrayerRequestRepo):
         with self.pool() as session:
             request_id = request if type(request) is int else request.id
             loadedPrayerRequest = session.query(PrayerRequestORM).filter(PrayerRequestORM.id == request_id).first()
-            requests = session.query(PrayerRequestORM).filter(
+            query = session.query(PrayerRequestORM).filter(
                 PrayerRequestORM.account_id == account_id, 
                 PrayerRequestORM.id != request_id,
                 PrayerRequestORM.contact_id == loadedPrayerRequest.contact_id,
-                PrayerRequestORM.archived_at != None).order_by(
+                PrayerRequestORM.archived_at == None).order_by(
                     PrayerRequestORM.gte_base_embedding.cosine_distance(loadedPrayerRequest.gte_base_embedding)
-                ).limit(5).all()
+                ).limit(5)
+            requests = query.all()
             return self._to_prayer_requests(requests)
 
     def _to_prayer_requests(self, requests: List[PrayerRequestORM])->PrayerRequests:
