@@ -29,7 +29,7 @@ class Contact {
     }
 
     async save(): Promise<void> {
-        const response = await fetch('/api/contacts', {
+        const response = await fetch('/api/contacts/', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -41,6 +41,9 @@ class Contact {
                 id: this.id,
             }),
         });
+        if (!response.ok) {
+            throw new Error('Failed to save contact');
+        }
         const json = await response.json();
         this.id = json.id;
     }

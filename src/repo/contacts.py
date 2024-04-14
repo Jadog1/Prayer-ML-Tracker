@@ -35,7 +35,7 @@ class ContactRepoImpl(ContactRepo):
     def save_contact(self, account_id:int, contact: Contact):
         with self.pool() as session:
             contact.account_id = account_id
-            session.add(ContactORM(account_id=account_id, name=contact.name, group_id=contact.group_id))
+            session.add(ContactORM(account_id=contact.account_id, name=contact.name, group_id=contact.group_id))
             session.commit()
 
     def delete(self, account_id:int, contact_id: int):
