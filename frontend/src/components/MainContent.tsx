@@ -46,6 +46,7 @@ interface MainContentProps {
   prayerRequestCRUD: PrayerRequestCRUDType
   disabled: boolean;
 }
+const colors = ["black", "blue", "red", "pink", "purple", "gray", "cyan"]
 
 function MainContent(props: MainContentProps) {
   const [prayerRequests, setPrayerRequests] = useState<PrayerRequests>(new PrayerRequests());
@@ -133,7 +134,7 @@ function SimilarRequests(props: { prayerRequests: PrayerRequests, existingID: Pr
 
   const linkPrayerRequest = async (pr: PrayerRequest): Promise<boolean> => {
     try {
-      await pr.link(props.existingID);
+      await pr.link(pr.id, props.existingID);
       return true;
     } catch (error: any) {
       console.error(error);
@@ -148,9 +149,12 @@ function SimilarRequests(props: { prayerRequests: PrayerRequests, existingID: Pr
   }
 
   let uniqueLinkIdColors: { [id: number]: string } = {};
+  let colorsIndexAt = 0;
   props.prayerRequests.requests.forEach((prayerRequest: PrayerRequest) => {
-    if (!(prayerRequest.id in uniqueLinkIdColors)) {
-      uniqueLinkIdColors[prayerRequest.link_id] = `#${Math.floor(Math.random()*16777215).toString(16)}`;
+    if (!prayerRequest.link_id) return;
+    if (!(prayerRequest.link_id in uniqueLinkIdColors)) {
+      uniqueLinkIdColors[prayerRequest.link_id] = colors[colorsIndexAt];
+      colorsIndexAt = (colorsIndexAt + 1); // We should never go out of bounds
     }
   });
 
@@ -173,7 +177,7 @@ function SimilarRequests(props: { prayerRequests: PrayerRequests, existingID: Pr
               style={{
                 backgroundColor: uniqueLinkIdColors[prayerRequest.link_id],
               }}>
-                {prayerRequest.link_id}
+                
               </div>
             }
             <div className="flex-1">{prayerRequest.request}</div>

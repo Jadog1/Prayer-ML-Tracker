@@ -92,15 +92,15 @@ class PrayerRequest {
         return PrayerRequest.fromJson(json);
     }
 
-    async link(id: PrayerRequestID): Promise<void> {
+    async link(idTo: PrayerRequestID, idFrom:PrayerRequestID = 0): Promise<void> {
         const response = await fetch(`/api/prayer_requests/link`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                id_from: this.id,
-                id_to: id,
+                id_from: idFrom || this.id,
+                id_to: idTo,
             }),
         });
         if (!response.ok) {
