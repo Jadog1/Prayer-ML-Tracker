@@ -20,6 +20,9 @@ class PrayerRequestORM(Base):
     link_id: Mapped[int] = mapped_column(ForeignKey("link.id"), nullable=True)
     gte_base_embedding: Mapped[Vector] = mapped_column(Vector(768), nullable=True)
     msmarco_base_embedding: Mapped[Vector] = mapped_column(Vector(768), nullable=True)
+    prayer_type: Mapped[str] = mapped_column(String(collation='pg_catalog."default"'),nullable=True)
+    sentiment_analysis: Mapped[str] = mapped_column(String(collation='pg_catalog."default"'),nullable=True)
+    emotion_roberta: Mapped[str] = mapped_column(String(collation='pg_catalog."default"'),nullable=True)
 
     # Foreign key relationships
     account: Mapped["AccountORM"] = relationship(back_populates="prayer_requests")

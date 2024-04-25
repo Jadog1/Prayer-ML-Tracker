@@ -3,7 +3,7 @@ from ..dto.prayerRequests import PrayerRequest, PrayerRequests
 from typing import List, Union
 from sqlalchemy.orm import scoped_session, Session
 from .orm import PrayerRequestORM, LinkORM
-from ..models.models import Embeddings
+from ..models.models import ClassifierModels, Embeddings
 
 class PrayerRequestRepo(ABC):
     @abstractmethod
@@ -39,9 +39,10 @@ class PrayerRequestRepo(ABC):
         pass
         
 class PrayerRequestRepoImpl(PrayerRequestRepo):
-    def __init__(self, session: scoped_session[Session], model: Embeddings):
+    def __init__(self, session: scoped_session[Session], model: Embeddings, classifierModels: ClassifierModels):
         self.pool = session
         self.model = model
+        self.classifierModels = classifierModels
 
     def get(self, account_id:int, request_id:int, include_embeddings=False)->PrayerRequest:
         with self.pool() as session:
@@ -85,6 +86,7 @@ class PrayerRequestRepoImpl(PrayerRequestRepo):
             ormRequest.request = request.request
             ormRequest.archived_at = request.archived_at
             self._set_embeddings(ormRequest)
+            self._set_classifications(ormRequest)
             session.commit()
             return ormRequest.id
 
@@ -92,6 +94,12 @@ class PrayerRequestRepoImpl(PrayerRequestRepo):
         embeddings = self.model.calculate_embeddings(prayer_request.request)
         prayer_request.gte_base_embedding = embeddings.get_gte_base()
         prayer_request.msmarco_base_embedding = embeddings.get_msmarco_base()
+
+    def _set_classifications(self, prayer_request: PrayerRequestORM):
+        classifications = self.classifierModels.classify(prayer_request.request)
+        prayer_request.prayer_type = classifications.prayerType
+        prayer_request.sentiment_analysis = classifications.sentiment
+        prayer_request.emotion_roberta = classifications.emotion
 
     def link_requests(self, account_id:int, id_from:int, id_to:int):
         with self.pool() as session:
