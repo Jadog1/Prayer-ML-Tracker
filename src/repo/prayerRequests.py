@@ -97,9 +97,9 @@ class PrayerRequestRepoImpl(PrayerRequestRepo):
 
     def _set_classifications(self, prayer_request: PrayerRequestORM):
         classifications = self.classifierModels.classify(prayer_request.request)
-        prayer_request.prayer_type = classifications.prayerType
-        prayer_request.sentiment_analysis = classifications.sentiment
-        prayer_request.emotion_roberta = classifications.emotion
+        prayer_request.prayer_type = classifications.get('prayerType')
+        prayer_request.sentiment_analysis = classifications.get('sentiment')
+        prayer_request.emotion_roberta = classifications.get('emotion')
 
     def link_requests(self, account_id:int, id_from:int, id_to:int):
         with self.pool() as session:

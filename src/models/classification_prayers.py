@@ -32,7 +32,7 @@ class BaseClassification:
 class SentimentAnalysis(BaseClassification):
     def __init__(self):
         model: str = "cardiffnlp/twitter-roberta-base-sentiment-latest"
-        self.pipeline = TextClassificationPipeline(model=model, top_k=None)
+        self.pipeline = pipeline('sentiment-analysis', model=model, tokenizer=model, top_k=None)
     
 class EmotionAnalysis(BaseClassification):
     def __init__(self):
@@ -53,5 +53,5 @@ class PrayerTypeClassifier(BaseClassification):
             print(e)
         
         if model is None:
-            model = "roberta-base"
-        self.pipeline = TextClassificationPipeline(model=model, tokenizer=tokenizer, framework="pt", top_k=None)
+            model = tokenizer
+        self.pipeline = pipeline(task="text-classification", model=model, tokenizer=tokenizer, framework="pt", top_k=None)
