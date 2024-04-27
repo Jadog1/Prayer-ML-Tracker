@@ -17,6 +17,9 @@ class PrayerRequest():
             self.link_id = prayerRequest.link_id
             self.created_at = prayerRequest.created_at
             self.updated_at = prayerRequest.updated_at
+            self.sentiment = prayerRequest.sentiment_analysis
+            self.emotion = prayerRequest.emotion_roberta
+            self.prayer_type = prayerRequest.prayer_type
             if includeEmbeddings:
                 self.embeddings = EmbeddingResult(prayerRequest.gte_base_embedding, prayerRequest.msmarco_base_embedding)
     

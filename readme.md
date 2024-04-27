@@ -21,6 +21,7 @@ To see a demo, visit https://youtu.be/VLOUYgGJo9I
 
 ### Future Features
 - Link prayer requests to GotQuestions, for in-depth answers that may apply to the prayer request
+- Named Entity Recognition to track people, also track time (EG, when would a prayer request make most sense to be followed up on? If I typed "in two weeks from now...", i would want to follow up in two weeks)
 - Build a ranking model to determine which prayer requests are most important to follow up on
 - Visualize common themes in prayer request sessions for an easy way to pray for common themes
 - Add reminders for prayer requests

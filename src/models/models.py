@@ -5,6 +5,7 @@ from .document_search import BibleSectionCorpus, BibleVerseCorpus, DocumentSearc
 import pandas as pd
 from torch import Tensor
 import pathlib
+from .classification_prayers import PrayerTypeClassifier, EmotionAnalysis, SentimentAnalysis
 filePath = pathlib.Path(__file__).parent.resolve()
 
 class EmbeddingResult:
@@ -78,3 +79,15 @@ class BibleEmbeddings:
 
         return results
 
+class ClassifierModels:
+    def __init__(self):
+        self.prayerType = PrayerTypeClassifier()
+        self.emotion = EmotionAnalysis()
+        self.sentiment = SentimentAnalysis()
+    
+    def classify(self, text: str)->dict:
+        return {
+            "prayerType": self.prayerType.predict(text).get_argmax(),
+            "emotion": self.emotion.predict(text).get_argmax(),
+            "sentiment": self.sentiment.predict(text).get_argmax()
+        }

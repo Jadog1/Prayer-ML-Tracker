@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 from src.repo.orm import OpenPool
 from src.repo.contacts import ContactRepoImpl
 from src.repo.prayerRequests import PrayerRequestRepoImpl
-from src.models.models import Embeddings, BibleEmbeddings
+from src.models.models import Embeddings, BibleEmbeddings, ClassifierModels
 
 load_dotenv()
 pg_uri = os.environ.get('PRAYERS_PG_DATABASE_URL')
@@ -18,10 +18,11 @@ pg_uri = os.environ.get('PRAYERS_PG_DATABASE_URL')
 print("Loading embeddings")    
 embedding_model = Embeddings()
 bible_model = BibleEmbeddings()
+classifier_models = ClassifierModels()
 class Repositories:
     def __init__(self, pg_uri):
         pool = OpenPool(pg_uri)
-        self.prayer_request_repo = PrayerRequestRepoImpl(pool, embedding_model)
+        self.prayer_request_repo = PrayerRequestRepoImpl(pool, embedding_model, classifier_models)
         self.contact_repo = ContactRepoImpl(pool)
         self.pool = pool
 
