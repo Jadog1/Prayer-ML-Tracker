@@ -13,6 +13,9 @@ class PrayerRequest {
     public id: PrayerRequestID;
     public created_at: string;
     public updated_at: string;
+    public emotion: string;
+    public sentiment: string;
+    public prayer_type: string;
 
     constructor() {
         this.account_id = 0;
@@ -23,6 +26,9 @@ class PrayerRequest {
         this.id = 0;
         this.created_at = '';
         this.updated_at = '';
+        this.emotion = '';
+        this.sentiment = '';
+        this.prayer_type = '';
     }
 
     public static fromJson(json: any): PrayerRequest {
@@ -48,6 +54,9 @@ class PrayerRequest {
         p.id = json.id;
         p.created_at = json.created_at;
         p.updated_at = json.updated_at;
+        p.emotion = json.emotion;
+        p.sentiment = json.sentiment;
+        p.prayer_type = json.prayer_type;
         return p;
     }
 
