@@ -61,11 +61,11 @@ class PrayerRequestRoute():
     def update(self, data: dict):
         prayer = PrayerRequest().from_dict(data)
         try:
-            newId = self.repo.update(account_id, prayer)
+            result = self.repo.update(account_id, prayer)
         except Exception as e:
             self.app.Logger().error(f"Error updating prayer request: {e}", error=e, data=prayer.to_dict())
             raise HTTPException(status_code=400, detail="Error updating prayer request")
-        return {"id": newId}
+        return result.to_dict()
     
     def delete(self, id: int):
         self.repo.delete(account_id, id)

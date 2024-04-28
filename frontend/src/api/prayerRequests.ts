@@ -60,7 +60,7 @@ class PrayerRequest {
         return p;
     }
 
-    async save(): Promise<PrayerRequestID> {
+    async save(): Promise<PrayerRequest> {
         let method = 'POST';
         if (this.id) method = 'PUT';
         const response = await fetch('/api/prayer_requests/', {
@@ -83,7 +83,7 @@ class PrayerRequest {
         }
         const json = await response.json();
         this.id = json.id;
-        return this.id;
+        return PrayerRequest.fromJson(json);
     }
 
     async delete (): Promise<void> {

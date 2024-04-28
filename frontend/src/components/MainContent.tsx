@@ -88,7 +88,7 @@ function MainContent(props: MainContentProps) {
   }
 
 
-  const setPrayerRequest = (newRequest : string) => {
+  const setPrayerRequest = (newRequest: string) => {
     clearTimeout(timeoutId)
     timeoutId = setTimeout(() => handleSave(newRequest), 500);
   };
@@ -97,19 +97,27 @@ function MainContent(props: MainContentProps) {
     <div className="w-full">
       <textarea
         value={prayerCRUDProps.prayerRequest}
-        onChange = {(e) => prayerCRUDProps.setPrayerRequest(e.target.value)}
+        onChange={(e) => prayerCRUDProps.setPrayerRequest(e.target.value)}
         onKeyUp={(e) => {
           const target = e.target as HTMLTextAreaElement;
           setPrayerRequest(target.value);
         }}
-        
+
         className="w-full h-64 p-2 border rounded"
         placeholder="Type your prayer request here..."
         disabled={props.disabled}
       ></textarea>
 
-      {updatedTimestamp != '' && 
-        <p className="text-sm text-right">Updated {updatedTimestamp}</p>}
+      <div className="flex justify-between">
+        {prayerCRUDProps.cachedLastSaved != null &&
+          <p className="text-sm text-left text-gray-500">
+            {prayerCRUDProps.cachedLastSaved.prayer_type} | {prayerCRUDProps.cachedLastSaved.emotion} | {prayerCRUDProps.cachedLastSaved.sentiment}
+          </p>}
+
+        {updatedTimestamp != '' &&
+          <p className="text-sm text-right">Updated {updatedTimestamp}</p>}
+      </div>
+
 
       <div className="mt-4">
         <button onClick={findSimilarRequests} className="bg-yellow-500 text-white px-4 py-2 mr-2 rounded">
@@ -166,21 +174,20 @@ function SimilarRequests(props: { prayerRequests: PrayerRequests, existingID: Pr
           <li
             key={prayerRequest.id}
             onClick={() => link(prayerRequest)}
-            className={`pb-2 pt-2 cursor-pointer border-b hover:bg-blue-300 transition duration-300 ease-in-out ${
-              selectedRequestId === prayerRequest.id ? 'bg-green-200' : ''
-            }`}
+            className={`pb-2 pt-2 cursor-pointer border-b hover:bg-blue-300 transition duration-300 ease-in-out ${selectedRequestId === prayerRequest.id ? 'bg-green-200' : ''
+              }`}
           >
             <div className="flex items-stretch gap-x-1">
-            {prayerRequest.link_id > 0 && 
-              <div
-              className="flex-none w-3 self-stretch"
-              style={{
-                backgroundColor: uniqueLinkIdColors[prayerRequest.link_id],
-              }}>
-                
-              </div>
-            }
-            <div className="flex-1">{prayerRequest.request}</div>
+              {prayerRequest.link_id > 0 &&
+                <div
+                  className="flex-none w-3 self-stretch"
+                  style={{
+                    backgroundColor: uniqueLinkIdColors[prayerRequest.link_id],
+                  }}>
+
+                </div>
+              }
+              <div className="flex-1">{prayerRequest.request}</div>
             </div>
           </li>
         ))}

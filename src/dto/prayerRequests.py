@@ -39,7 +39,10 @@ class PrayerRequest():
             'link_id': self.link_id,
             'id': self.id,
             'created_at': self.created_at,
-            'updated_at': self.updated_at
+            'updated_at': self.updated_at,
+            'sentiment': self.sentiment,
+            'emotion': self.emotion,
+            'prayer_type': self.prayer_type
         }
     
     def from_dict(self, data: dict)->'PrayerRequest':

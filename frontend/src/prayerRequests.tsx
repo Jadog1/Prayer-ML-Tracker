@@ -5,11 +5,8 @@ import Header from './components/Header';
 import Sidebar from './components/Sidebar';
 import MainContent from './components/MainContent';
 import { PrayerRequest, PrayerRequestID, PrayerRequests } from './api/prayerRequests';
-import { Contact } from './api/contacts';
 import ErrorMessage from './components/errorBubble';
 import PrayerList from './components/PrayerList';
-import { BibleResults } from './api/bible';
-import { over } from 'lodash';
 import { PrayerRequestCRUD, PrayerRequestCRUDType } from './util/prayerRequestProperties';
 
 export type errorHandler = (error: string) => void;
@@ -57,6 +54,7 @@ function PrayerRequestsBody(props: PrayerRequestBodyProps) {
       let pr = await new PrayerRequest().load(id);
       crudProps.setId(id);
       crudProps.setPrayerRequest(pr.request);
+      crudProps.setCachedLastSaved(pr);
       setListView(false);
     } catch (error: any) {
       console.error(error);

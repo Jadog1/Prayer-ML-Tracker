@@ -23,7 +23,11 @@ class PrayerRequestRepo(ABC):
         pass
 
     @abstractmethod
-    def save(self, account_id:int, request: PrayerRequest)->int:
+    def save(self, account_id:int, request: PrayerRequest)->PrayerRequest:
+        pass
+
+    @abstractmethod
+    def update(self, account_id:int, request: PrayerRequest)->PrayerRequest:
         pass
 
     @abstractmethod
@@ -78,9 +82,9 @@ class PrayerRequestRepoImpl(PrayerRequestRepo):
             session.add(ormRequest)
             session.commit()
             session.refresh(ormRequest)
-            return ormRequest.id
+            return PrayerRequest(ormRequest)
         
-    def update(self, account_id:int, request: PrayerRequest)->int:
+    def update(self, account_id:int, request: PrayerRequest)->PrayerRequest:
         with self.pool() as session:
             ormRequest = session.query(PrayerRequestORM).filter(PrayerRequestORM.account_id == account_id, PrayerRequestORM.id == request.id).first()
             ormRequest.request = request.request
@@ -88,7 +92,7 @@ class PrayerRequestRepoImpl(PrayerRequestRepo):
             self._set_embeddings(ormRequest)
             self._set_classifications(ormRequest)
             session.commit()
-            return ormRequest.id
+            return PrayerRequest(ormRequest)
 
     def _set_embeddings(self, prayer_request: PrayerRequestORM):
         embeddings = self.model.calculate_embeddings(prayer_request.request)

@@ -8,8 +8,9 @@ export function PrayerRequestProps () {
     const [id, setId] = useState(0);
     const [prayerRequest, setPrayerRequest] = useState('');
     const [contact, setContact] = useState<Contact>(new Contact());
+    const [cachedLastSaved, setCachedLastSaved] = useState<PrayerRequest | null>(null);
 
-    return { id, setId, prayerRequest, setPrayerRequest, contact, setContact };
+    return { id, setId, prayerRequest, setPrayerRequest, contact, setContact, cachedLastSaved, setCachedLastSaved };
 }
 
 export function PrayerRequestCRUD(setErrorText: (error: string) => void) {
@@ -26,8 +27,9 @@ export function PrayerRequestCRUD(setErrorText: (error: string) => void) {
         pr.contact = properties.contact;
         pr.request = prayerRequest
         try {
-            let newId = await pr.save();
-            properties.setId(newId);
+            let newPr = await pr.save();
+            properties.setId(newPr.id);
+            properties.setCachedLastSaved(newPr);
             return pr;
         } catch (error: any) {
             console.error(error);

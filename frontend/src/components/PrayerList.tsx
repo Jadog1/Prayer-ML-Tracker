@@ -29,6 +29,7 @@ function PrayerList(props: PrayerListProps) {
                 <thead>
                     <tr>
                         <th className="text-center">Date</th>
+                        <th className="text-center">Sentiment</th>
                         <th className="text-center">Prayer Request</th>
                         <th className="text-center">Actions</th>
                     </tr>
@@ -38,6 +39,11 @@ function PrayerList(props: PrayerListProps) {
                         <tr key={prayerRequest.id} className="border-t" style={{ height: '75px' }}>
                             <td className="p-2">
                                 {new Date(prayerRequest.created_at).toLocaleDateString()}
+                            </td>
+                            <td className="p-2">
+                                {prayerRequest.prayer_type} <br />
+                                {prayerRequest.emotion} <br />
+                                {prayerRequest.sentiment}
                             </td>
                             <td className="p-2">
                                 <TruncateText text={prayerRequest.request} limit={100} />
