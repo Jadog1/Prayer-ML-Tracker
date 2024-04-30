@@ -65,6 +65,14 @@ class PrayerRequestRepoImpl(PrayerRequestRepo):
                 ).order_by(PrayerRequestORM.created_at.desc()).all()
             return self._to_prayer_requests(requests)
 
+    def get_group_session(self, account_id:int, group_id:int, date_start:str, date_end:str)->PrayerRequests:
+        with self.pool() as session:
+            requests = session.query(PrayerRequestORM).filter(
+                PrayerRequestORM.account_id == account_id, PrayerRequestORM.contact.group_id == group_id,
+                PrayerRequestORM.created_at >= date_start, PrayerRequestORM.created_at <= date_end
+            ).all()
+            return self._to_prayer_requests(requests)
+
     def get_daterange(self, account_id:int, start:str, end:str)->PrayerRequests:
         with self.pool() as session:
             requests = session.query(PrayerRequestORM).filter(
