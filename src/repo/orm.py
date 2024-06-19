@@ -7,6 +7,19 @@ from pgvector.sqlalchemy import Vector
 class Base(DeclarativeBase):
     pass
 
+prayerColumnsExceptEmbeddings = [
+    "id",
+    "account_id",
+    "request",
+    "created_at",
+    "updated_at",
+    "contact_id",
+    "archived_at",
+    "link_id",
+    "prayer_type",
+    "sentiment_analysis",
+    "emotion_roberta"
+]
 class PrayerRequestORM(Base):
     __tablename__ = 'prayer_request'
 

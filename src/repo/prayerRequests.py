@@ -2,8 +2,10 @@ from abc import ABC, abstractmethod
 from ..dto.prayerRequests import PrayerRequest, PrayerRequests
 from typing import List, Union
 from sqlalchemy.orm import scoped_session, Session
-from .orm import PrayerRequestORM, LinkORM
+from .orm import PrayerRequestORM, LinkORM, prayerColumnsExceptEmbeddings
 from ..models.models import ClassifierModels, Embeddings
+from sqlalchemy.sql import text
+from types import SimpleNamespace
 
 class PrayerRequestRepo(ABC):
     @abstractmethod
@@ -51,6 +53,8 @@ class PrayerRequestRepoImpl(PrayerRequestRepo):
     def get(self, account_id:int, request_id:int, include_embeddings=False)->PrayerRequest:
         with self.pool() as session:
             request = session.query(PrayerRequestORM).filter(PrayerRequestORM.account_id == account_id, PrayerRequestORM.id == request_id).first()
+            if not request:
+                raise ValueError(f"Prayer request with id {request_id} does not exist")
             return PrayerRequest(request, includeEmbeddings=include_embeddings)
 
     def get_all(self, account_id:int)->PrayerRequests:
@@ -65,13 +69,50 @@ class PrayerRequestRepoImpl(PrayerRequestRepo):
                 ).order_by(PrayerRequestORM.created_at.desc()).all()
             return self._to_prayer_requests(requests)
 
-    def get_group_session(self, account_id:int, group_id:int, date_start:str, date_end:str)->PrayerRequests:
+    def get_group_session(self, account_id:int, start_date:str, end_date:str, group_id:int)->PrayerRequests:
         with self.pool() as session:
-            requests = session.query(PrayerRequestORM).filter(
-                PrayerRequestORM.account_id == account_id, PrayerRequestORM.contact.group_id == group_id,
-                PrayerRequestORM.created_at >= date_start, PrayerRequestORM.created_at <= date_end
-            ).all()
-            return self._to_prayer_requests(requests)
+            params = {"start_date": start_date, "end_date": end_date, "account_id": account_id}
+            if group_id:
+                params["group_id"] = group_id
+            columnsWithPrefix = [f"pr.{col}" for col in prayerColumnsExceptEmbeddings]
+            requests = session.execute(text(f"""
+                with results as (
+                    select {', '.join(columnsWithPrefix)},
+                        CASE 
+                            WHEN sentiment_analysis = 'negative' THEN -1
+                            WHEN sentiment_analysis = 'neutral' THEN 0
+                            WHEN sentiment_analysis = 'positive' THEN 1
+                            ELSE NULL -- Handle any other cases if needed
+                        END AS sentiment_number,
+                        CASE
+                            WHEN prayer_type = 'Prayer Request' THEN -1
+                            WHEN prayer_type = 'Praise' THEN 1
+                        END as prayer_number,
+                        json_build_object(
+                            'group_id', c.group_id,
+                            'name', c.name,
+                            'group', json_build_object('name', g.name)
+                        ) as contact
+                    from prayer_request pr
+                    inner join contact c on c.id = pr.contact_id
+                    left join contact_group g on g.id=c.group_id
+                    where created_at BETWEEN :start_date AND :end_date 
+                        {"and group_id = :group_id" if group_id is not None else ""} 
+                        AND pr.account_id = :account_id
+                )
+                select *
+                from results 
+                order by sentiment_number+prayer_number asc                     
+            """), params)
+            results = requests.mappings().all()
+            return self._to_prayer_requests(results)
+        #     ids = [r[0] for r in requests]
+        #     requests = session.query(PrayerRequestORM).filter(PrayerRequestORM.id.in_(ids)).all()
+        #     results = self._to_prayer_requests(requests)
+        # sorted_results = results.to_list()
+        # sorted_results.sort(key=lambda x: ids.index(x['id']))
+        # results = PrayerRequests().from_list(sorted_results)
+        # return requests
 
     def get_daterange(self, account_id:int, start:str, end:str)->PrayerRequests:
         with self.pool() as session:
@@ -80,7 +121,7 @@ class PrayerRequestRepoImpl(PrayerRequestRepo):
                 PrayerRequestORM.created_at >= start, PrayerRequestORM.created_at <= end).all()
             return self._to_prayer_requests(requests)
 
-    def save(self, account_id:int, request: PrayerRequest)->int:
+    def save(self, account_id:int, request: PrayerRequest)->PrayerRequest:
         with self.pool() as session:
             request.account_id = account_id
             ormRequest = PrayerRequestORM(
@@ -100,6 +141,7 @@ class PrayerRequestRepoImpl(PrayerRequestRepo):
             self._set_embeddings(ormRequest)
             self._set_classifications(ormRequest)
             session.commit()
+            session.refresh(ormRequest)
             return PrayerRequest(ormRequest)
 
     def _set_embeddings(self, prayer_request: PrayerRequestORM):

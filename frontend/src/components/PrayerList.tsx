@@ -8,6 +8,7 @@
 // As props, it also has id and setId which are used to set the id of the prayer request
 
 import { PrayerRequest, PrayerRequestID } from "../api/prayerRequests";
+import { PrayerSummary } from "../api/prayerSummary";
 import TruncateText from "./TruncateText";
 
 type PrayerListProps = {
@@ -59,5 +60,39 @@ function PrayerList(props: PrayerListProps) {
         </div>
     );
 }
+
+function PrayerSummaryList(props: {summary: PrayerSummary}) {
+    return (
+        <div className="text-center">
+            <table className="w-full overflow-auto">
+                <thead>
+                    <tr>
+                        <th className="text-center">Group - Name</th>
+                        <th className="text-center">Prayer</th>
+                        <th className="text-center">Sentiment</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {props.summary.prayers.map((summaryItem) => (
+                        <tr key={summaryItem.id} className="border-t" style={{ height: '75px' }}>
+                            <td className="p-2">
+                                {summaryItem.contact.group.name} <br/>
+                                {summaryItem.contact.name}
+                            </td>
+                            <td className="p-2">
+                                <TruncateText text={summaryItem.request} limit={200} />
+                            </td>
+                            <td className="p-2">
+                                {summaryItem.emotion}
+                            </td>
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
+        </div>
+    );
+}
+
+export {PrayerSummaryList}
 
 export default PrayerList;

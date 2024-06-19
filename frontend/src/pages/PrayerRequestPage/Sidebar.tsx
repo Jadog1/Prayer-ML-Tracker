@@ -1,8 +1,8 @@
 // src/components/Sidebar.tsx
 
 import React, { useContext, useEffect, useState } from 'react';
-import { Contact, Contacts, Group, Groups } from '../api/contacts';
-import { ErrorHandlerContext } from '../prayerRequests';
+import { Contact, Contacts, Group, Groups } from '../../api/contacts';
+import { ErrorHandlerContext } from '../../prayerRequests';
 
 
 type SidebarProps = {
