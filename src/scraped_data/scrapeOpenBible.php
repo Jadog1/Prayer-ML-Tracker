@@ -2,9 +2,11 @@
 require_once __DIR__ . '/vendor/autoload.php';
 
 use GuzzleHttp\Client;
+use GuzzleHttp\Promise;
 use Symfony\Component\DomCrawler\Crawler;
 
 // Global vars 
+$chunkSize = 60;
 $client = new Client();
 $booksOfTheBible = [
     // Old Testament
@@ -30,42 +32,64 @@ $crossRefsCSV = fopen('cross-refs.csv', 'w');
 if (!$crossRefsCSV) die ('There was an issue opening cross-refs.csv.');
 
 readCsvLineByLine('niv.csv');
+fclose($crossRefsCSV);
 
 function readCsvLineByLine(string $fileName) {
+    global $chunkSize, $client;
+
     if (!file_exists($fileName) || !is_readable($fileName)) {
         echo "The file $fileName does not exist or is not readable.";
         return;
     }
 
+    $file = fopen($fileName, 'r');
+    if (!$file) die ("Error opening $fileName.");
     $totalLines = countLines($fileName);
 
-    // Open the file in read mode
-    if (($handle = fopen($fileName, 'r')) !== false) {
-        $lineCount = 0;
-        // Loop through each line in the file
-        while (($line = fgetcsv($handle, 1000, ',')) !== false) {
-            processLine($line, $lineCount);
-            $lineCount++;
+    $lineCount = 0;
+
+    // Loop through the file in chunks.
+    while (($line = fgetcsv($file)) !== false) {
+        $asyncRequests[] = $client->getAsync(formatURL($line));
+        $lines[] = $line;
+        
+        if (count($asyncRequests) >= $chunkSize) {
+            $responses = Promise\utils::unwrap($asyncRequests);
+            foreach ($responses as $key => $response) {
+                processResponse($lines[$key], $response);
+            }
+
+            $lines = [];
+            $asyncRequests = [];
             displayProgressBar($lineCount, $totalLines);
         }
-        // Close the file
-        fclose($handle);
-    } else {
-        echo "Error opening the file $fileName.";
+
+        $lineCount++;
+    }
+
+    // Finish it up.
+    if (count($asyncRequests)) {
+        $responses = Promise\utils::unwrap($asyncRequests);
+        foreach ($responses as $key => $response) {
+            processResponse($lines[$key], $response);
+            displayProgressBar($lineCount, $totalLines);
+        }
     }
 }
 
-function processLine(array $line) {
-    global $booksOfTheBible, $client;
+function formatURL(array $line) {
+    global $booksOfTheBible;
 
     $verse = $line[2];
     $chapter = $line[1];
     $book = $booksOfTheBible[$line[0] - 1];
 
-    $response = $client->get("https://www.openbible.info/labs/cross-references/search?q=$book+$chapter+$verse");
-    $html = (string) $response->getBody();
-    $crawler = new Crawler($html);
-    $crossRefs = $crawler->filterXPath('//div[contains(@class, "crossrefs")]/div[not(contains(@class, "crossref-verse"))]')->each(function (Crawler $node, $i) use ($book, $chapter, $verse, $line) {
+    return "https://www.openbible.info/labs/cross-references/search?q=$book+$chapter+$verse";
+}
+
+function processResponse(array $line, object $response) {
+    $crawler = new Crawler((string) $response->getBody());
+    $lines = $crawler->filterXPath('//div[contains(@class, "crossrefs")]/div[not(contains(@class, "crossref-verse"))]')->each(function (Crawler $node, $i) use ($line) {
         global $booksOfTheBible, $booksKeyed, $crossRefsCSV;
 
         $modifier = 0;
@@ -75,17 +99,22 @@ function processLine(array $line) {
             $modifier = 1;
         }
 
+        // Gather reference data.
         if (!($referenceBook = $booksKeyed[$info[0]] ?? false)) {
-            $referenceBook = array_search($info[0], $booksOfTheBible) + 1;
-            $booksKeyed[$info[0]] = $referenceBook;
+            $referenceBook = (string) (array_search($info[0], $booksOfTheBible) + 1);
+            $booksKeyed[$info[0]] = (string) $referenceBook;
         }
+        $referenceChapter = (string) $info[1 + $modifier];
+        $referenceStartVerse = (string) $info[2 + $modifier];
+        $referenceEndVerse = (string) ($info[3 + $modifier] ?? 0);
+        $referenceText =  $node->filterXPath('//p')->text();
 
-        $referenceChapter = $info[1 + $modifier];
-        $referenceStartVerse = $info[2 + $modifier];
-        $referenceEndVerse = $info[3 + $modifier] ?? 0;
-        $referenceText = $node->filterXPath('//p')->text();
+        // Source data.
+        $book = $line[0];
+        $chapter = $line[1];
+        $verse = $line[2];
 
-        fputcsv($crossRefsCSV, [$line[0], $chapter, $verse, $referenceBook, $referenceChapter, $referenceStartVerse, $referenceEndVerse, $referenceText]);
+        fputcsv($crossRefsCSV, [$book, $chapter, $verse, $referenceBook, $referenceChapter, $referenceStartVerse, $referenceEndVerse, $referenceText]);
     });
 }
 
