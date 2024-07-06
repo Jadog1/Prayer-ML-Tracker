@@ -4,3 +4,4 @@ Prayermate.json
 *.csv
 tests.ipynb
 node_modules/
+/vendor
