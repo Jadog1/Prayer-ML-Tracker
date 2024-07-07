@@ -1,0 +1,9 @@
+fastapi==0.111.0
+numpy==1.24.3
+pandas==2.0.1
+pgvector==0.2.5
+pydantic==2.8.2
+sentence_transformers==2.3.1
+SQLAlchemy==2.0.28
+structlog==24.2.0
+torch==2.2.0

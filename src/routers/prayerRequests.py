@@ -59,7 +59,13 @@ class PrayerRequestRoute():
         if summary.group_id == 0:
             summary.group_id = None
         prayers = self.repo.get_group_session(account_id, summary.date_from, summary.date_to, summary.group_id)
-        return {"prayers": prayers.to_list()}
+        prayerList = prayers.to_list()
+        prayer_request_ids = [prayer['id'] for prayer in prayerList]
+        topics = self.repo.get_group_session_topics(prayer_request_ids=prayer_request_ids)
+        return {
+            "prayers": prayerList,
+            "topics": topics.to_list()
+        }
     
     def save(self, data: dict):
         prayer = PrayerRequest().from_dict(data)

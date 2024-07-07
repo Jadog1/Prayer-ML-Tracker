@@ -1,20 +1,26 @@
 import { Contact } from "./contacts";
 import { PrayerRequest } from "./prayerRequests";
+import { GroupedTopics, Topic } from "./topics";
 
 type prayerSummaryJson = {
     prayers: PrayerRequest[];
+    topics: Topic[];
 }
 
 class PrayerSummary {
     public prayers: PrayerRequest[];
+    public topics: GroupedTopics;
 
     constructor() {
         this.prayers = [];
+        this.topics = new GroupedTopics();
     }
 
     public static fromJson(json: prayerSummaryJson): PrayerSummary {
         const ps = new PrayerSummary()
         ps.prayers = json.prayers.map((item: PrayerRequest) => PrayerRequest.fromJson(item));
+        let topics = new GroupedTopics();
+        ps.topics = topics.fromJson(json.topics)
         return ps;
     }
 

@@ -3,6 +3,7 @@ import Header from '../../components/Header';
 import Sidebar from './Sidebar';
 import { PrayerSummary } from '../../api/prayerSummary';
 import { PrayerSummaryList } from '../../components/PrayerList';
+import { Topics } from './Topics';
 
 type PrayerSummaryContentProps = {
 }
@@ -12,6 +13,7 @@ function PrayerSummaryContent(props: PrayerSummaryContentProps) {
         <div className="flex">
           <Sidebar setSummary={setSummary} />
           <PrayerSummaryBody summary={summary} />
+          <Topics summary={summary} />
         </div>
       );
 }
