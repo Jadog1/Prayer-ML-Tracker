@@ -94,9 +94,13 @@ function processResponse(array $line, object $response) {
 
         $modifier = 0;
         $info = preg_split("/[\s:-]+/", $node->filterXPath('//h3')->text());
-        if (intval($info[0])) {
+        if (intval($info[0])) { // Books that starts with a number. Eg. 1st Samuel.
             $info[0] = $info[0] . ' ' . $info[1];
             $modifier = 1;
+        }
+
+        if (str_contains($info[0], 'Solomon')) {
+            $info[0] = 'Song of Solomon';
         }
 
         // Gather reference data.
@@ -109,12 +113,15 @@ function processResponse(array $line, object $response) {
         $referenceEndVerse = (string) ($info[3 + $modifier] ?? 0);
         $referenceText =  $node->filterXPath('//p')->text();
 
+        $class = $node->attr('class');
+        $referenceWeight = $class ? substr($class, -1) : '0';
+
         // Source data.
         $book = $line[0];
         $chapter = $line[1];
         $verse = $line[2];
 
-        fputcsv($crossRefsCSV, [$book, $chapter, $verse, $referenceBook, $referenceChapter, $referenceStartVerse, $referenceEndVerse, $referenceText]);
+        fputcsv($crossRefsCSV, [$book, $chapter, $verse, $referenceBook, $referenceChapter, $referenceStartVerse, $referenceEndVerse, $referenceText, $referenceWeight]);
     });
 }
 
