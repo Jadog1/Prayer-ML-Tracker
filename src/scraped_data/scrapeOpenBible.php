@@ -14,7 +14,7 @@ $booksOfTheBible = [
     "Joshua", "Judges", "Ruth", "1 Samuel", "2 Samuel",
     "1 Kings", "2 Kings", "1 Chronicles", "2 Chronicles", "Ezra",
     "Nehemiah", "Esther", "Job", "Psalm", "Proverbs",
-    "Ecclesiastes", "Song of Solomon", "Isaiah", "Jeremiah", "Lamentations",
+    "Ecclesiastes", "Song Of Solomon", "Isaiah", "Jeremiah", "Lamentations",
     "Ezekiel", "Daniel", "Hosea", "Joel", "Amos",
     "Obadiah", "Jonah", "Micah", "Nahum", "Habakkuk",
     "Zephaniah", "Haggai", "Zechariah", "Malachi",
@@ -89,25 +89,26 @@ function formatURL(array $line) {
 
 function processResponse(array $line, object $response) {
     $crawler = new Crawler((string) $response->getBody());
-    $lines = $crawler->filterXPath('//div[contains(@class, "crossrefs")]/div[not(contains(@class, "crossref-verse"))]')->each(function (Crawler $node, $i) use ($line) {
+    $crawler->filterXPath('//div[contains(@class, "crossrefs")]/div[not(contains(@class, "crossref-verse"))]')->each(function (Crawler $node, $i) use ($line) {
         global $booksOfTheBible, $booksKeyed, $crossRefsCSV;
 
+        // Gather reference data.
         $modifier = 0;
         $info = preg_split("/[\s:-]+/", $node->filterXPath('//h3')->text());
+
         if (intval($info[0])) { // Books that starts with a number. Eg. 1st Samuel.
             $info[0] = $info[0] . ' ' . $info[1];
             $modifier = 1;
+        } else if (strtolower($info[0]) == 'song') { // Spicy sex poem.
+            $info[0] = 'Song Of Solomon';
+            $modifier = 2;
         }
 
-        if (str_contains($info[0], 'Solomon')) {
-            $info[0] = 'Song of Solomon';
-        }
-
-        // Gather reference data.
         if (!($referenceBook = $booksKeyed[$info[0]] ?? false)) {
             $referenceBook = (string) (array_search($info[0], $booksOfTheBible) + 1);
             $booksKeyed[$info[0]] = (string) $referenceBook;
         }
+
         $referenceChapter = (string) $info[1 + $modifier];
         $referenceStartVerse = (string) $info[2 + $modifier];
         $referenceEndVerse = (string) ($info[3 + $modifier] ?? 0);
