@@ -25,6 +25,10 @@ class SummaryBaseModel(BaseModel):
     date_to: str
     group_id: int
 
+class GetLinksModel(BaseModel):
+    link_id: int
+    request_id: int
+
 class PrayerRequestRoute():
     def __init__(self, app: App, repo: PrayerRequestRepoImpl, model: Embeddings, bibleModel: BibleEmbeddings):
         self.app = app
@@ -34,6 +38,8 @@ class PrayerRequestRoute():
         self.router = APIRouter()
         self.router.add_api_route("/", self.get_all, methods=["GET"])
         self.router.add_api_route("/{id}", self.get, methods=["GET"])
+        # /links should have 2 parameters, link_id and request_id
+        self.router.add_api_route("/links", self.get_links, methods=["GET"])
         self.router.add_api_route("/contact/{contact_id}", self.get_contact, methods=["GET"])
         self.router.add_api_route("/", self.save, methods=["POST"])
         self.router.add_api_route("/", self.update, methods=["PUT"])
@@ -54,6 +60,10 @@ class PrayerRequestRoute():
     def get(self, id: int):
         result = self.repo.get(account_id, id)
         return result.to_dict()
+    
+    def get_links(self, parameters: GetLinksModel):
+        results = self.repo.get_linked_requests(account_id, parameters.request_id, parameters.link_id)
+        return results.to_list()
     
     def get_summary(self, summary: SummaryBaseModel):
         if summary.group_id == 0:

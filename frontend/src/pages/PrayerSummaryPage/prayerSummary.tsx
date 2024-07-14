@@ -12,18 +12,10 @@ function PrayerSummaryContent(props: PrayerSummaryContentProps) {
     return (
         <div className="flex">
           <Sidebar setSummary={setSummary} />
-          <PrayerSummaryBody summary={summary} />
+          <PrayerSummaryList summary={summary} />
           <Topics summary={summary} />
         </div>
       );
-}
-
-function PrayerSummaryBody(props: {summary: PrayerSummary}) {
-  return (
-    <>
-      <PrayerSummaryList summary={props.summary} />
-    </>
-  );
 }
 
 export default PrayerSummaryContent;

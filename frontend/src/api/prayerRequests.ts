@@ -16,6 +16,8 @@ class PrayerRequest {
     public emotion: string;
     public sentiment: string;
     public prayer_type: string;
+    public links: PrayerRequest[];
+    public topics: string[];
 
     constructor() {
         this.account_id = 0;
@@ -29,6 +31,8 @@ class PrayerRequest {
         this.emotion = '';
         this.sentiment = '';
         this.prayer_type = '';
+        this.links = [];
+        this.topics = [];
     }
 
     public static fromJson(json: any): PrayerRequest {
@@ -57,6 +61,7 @@ class PrayerRequest {
         p.emotion = json.emotion;
         p.sentiment = json.sentiment;
         p.prayer_type = json.prayer_type;
+        p.topics = json.topics || [];
         return p;
     }
 
@@ -116,6 +121,18 @@ class PrayerRequest {
             throw new Error(`Failed to link: ${response.statusText}`);
         }
     }
+
+    async getLinks(): Promise<PrayerRequest[]> {
+        // GetLinks should call the endpoint with the link_id and request_id as query parameters
+        const response = await fetch(`/api/prayer_requests/links?link_id=${this.link_id}&request_id=${this.id}`);
+        if (!response.ok) {
+            throw new Error(`Failed to fetch: ${response.statusText}`);
+        }
+        const json = await response.json();
+        this.links = json.map((p: any) => PrayerRequest.fromJson(p));
+        return this.links;
+    }
+
 }
 
 class PrayerRequests {

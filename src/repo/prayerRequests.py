@@ -3,9 +3,10 @@ from ..dto.prayerRequests import PrayerRequest, PrayerRequests
 from ..dto.topic import Topic, Topics
 from typing import List, Union
 from sqlalchemy.orm import scoped_session, Session
-from .orm import PrayerRequestORM, LinkORM, prayerColumnsExceptEmbeddings, TopicORM, PrayerTopicsORM
+from .orm import ContactORM, PrayerRequestORM, LinkORM, prayerColumnsExceptEmbeddings, TopicORM, PrayerTopicsORM
 from ..models.models import ClassifierModels, EmbeddingResult, Embeddings
 from sqlalchemy.sql import text
+from sqlalchemy import func, and_, case
 import numpy as np
 
 class PrayerRequestRepo(ABC):
@@ -70,6 +71,15 @@ class PrayerRequestRepoImpl(PrayerRequestRepo):
                 ).order_by(PrayerRequestORM.created_at.desc()).all()
             return self._to_prayer_requests(requests)
         
+    def get_linked_requests(self, account_id:int, request_id:int, link_id:int)->PrayerRequests:
+        with self.pool() as session:
+            requests = session.query(PrayerRequestORM).filter(
+                PrayerRequestORM.account_id == account_id, 
+                PrayerRequestORM.link_id == link_id, 
+                PrayerRequestORM.id != request_id
+                ).order_by(PrayerRequestORM.created_at.desc()).all()
+            return self._to_prayer_requests(requests)
+        
     def get_group_session_topics(self, prayer_request_ids:List[int])->Topics:
         with self.pool() as session:
             query = session.query(TopicORM).join(PrayerTopicsORM).filter(PrayerTopicsORM.prayer_request_id.in_(prayer_request_ids))
@@ -78,41 +88,46 @@ class PrayerRequestRepoImpl(PrayerRequestRepo):
 
     def get_group_session(self, account_id:int, start_date:str, end_date:str, group_id:int)->PrayerRequests:
         with self.pool() as session:
-            params = {"start_date": start_date, "end_date": end_date, "account_id": account_id}
-            if group_id:
-                params["group_id"] = group_id
-            columnsWithPrefix = [f"pr.{col}" for col in prayerColumnsExceptEmbeddings]
-            requests = session.execute(text(f"""
-                with results as (
-                    select {', '.join(columnsWithPrefix)},
-                        CASE 
-                            WHEN sentiment_analysis = 'negative' THEN -1
-                            WHEN sentiment_analysis = 'neutral' THEN 0
-                            WHEN sentiment_analysis = 'positive' THEN 1
-                            ELSE NULL -- Handle any other cases if needed
-                        END AS sentiment_number,
-                        CASE
-                            WHEN prayer_type = 'Prayer Request' THEN -1
-                            WHEN prayer_type = 'Praise' THEN 1
-                        END as prayer_number,
-                        json_build_object(
-                            'group_id', c.group_id,
-                            'name', c.name,
-                            'group', json_build_object('name', g.name)
-                        ) as contact
-                    from prayer_request pr
-                    inner join contact c on c.id = pr.contact_id
-                    left join contact_group g on g.id=c.group_id
-                    where created_at BETWEEN :start_date AND :end_date 
-                        {"and group_id = :group_id" if group_id is not None else ""} 
-                        AND pr.account_id = :account_id
-                )
-                select *
-                from results 
-                order by sentiment_number+prayer_number asc                     
-            """), params)
-            results = requests.mappings().all()
-            return self._to_prayer_requests(results)
+            sentiment_case = case(
+                (PrayerRequestORM.sentiment_analysis == 'negative', -1),
+                (PrayerRequestORM.sentiment_analysis == 'neutral', 0),
+                (PrayerRequestORM.sentiment_analysis == 'positive', 1),
+                else_=None
+            ).label('sentiment_number')
+
+            prayer_case = case(
+                (PrayerRequestORM.prayer_type == 'Prayer Request', -1),
+                (PrayerRequestORM.prayer_type == 'Praise', 1)
+            ).label('prayer_number')
+
+            # Create the main query with joins and conditions
+            query = session.query(
+                PrayerRequestORM.id,
+                sentiment_case,
+                prayer_case,
+            ).filter(
+                PrayerRequestORM.created_at.between(start_date, end_date),
+                PrayerRequestORM.account_id == account_id
+            )
+            
+            # Add the group_id filter conditionally
+            if group_id is not None:
+                query = query.join(PrayerRequestORM.contact).filter(ContactORM.group_id == group_id)
+            
+            # Use subquery to mimic the CTE
+            subquery = query.subquery()
+
+            # Final query to select from the subquery and order by sentiment_number + prayer_number
+            final_query = session.query(
+                PrayerRequestORM
+            ).join(
+                subquery, subquery.c.id == PrayerRequestORM.id
+            ).order_by(
+                (subquery.c.sentiment_number + subquery.c.prayer_number).asc()
+            )
+
+            requests = final_query.all()
+            return self._to_prayer_requests(requests)
 
     def get_daterange(self, account_id:int, start:str, end:str)->PrayerRequests:
         with self.pool() as session:
@@ -127,7 +142,7 @@ class PrayerRequestRepoImpl(PrayerRequestRepo):
             ormRequest = PrayerRequestORM(
                 id=request.id, account_id=account_id, contact_id=request.contact_id, 
                 request=request.request, archived_at=request.archived_at)
-            embeddings = self._set_embeddings(ormRequest)
+            self._set_embeddings(ormRequest)
             # if request.request != "":
             #     self._build_prayer_topics(session, ormRequest.id, embeddings)
             session.add(ormRequest)
@@ -195,15 +210,34 @@ class PrayerRequestRepoImpl(PrayerRequestRepo):
         with self.pool() as session:
             request_id = request if type(request) is int else request.id
             loadedPrayerRequest = session.query(PrayerRequestORM).filter(PrayerRequestORM.id == request_id).first()
-            query = session.query(PrayerRequestORM).filter(
-                PrayerRequestORM.account_id == account_id, 
+            
+            # Use coalesce to group by link_id if not null, otherwise by id
+            group_by_column = func.coalesce(PrayerRequestORM.link_id, PrayerRequestORM.id)
+            
+            # Subquery to get the most recent row for each group
+            subquery = session.query(
+                func.max(PrayerRequestORM.id).label('max_id')
+            ).filter(
+                PrayerRequestORM.account_id == account_id,
                 PrayerRequestORM.id != request_id,
                 PrayerRequestORM.contact_id == loadedPrayerRequest.contact_id,
-                PrayerRequestORM.archived_at == None).order_by(
-                    PrayerRequestORM.gte_base_embedding.cosine_distance(loadedPrayerRequest.gte_base_embedding)
-                ).limit(5)
+                PrayerRequestORM.archived_at == None
+            ).group_by(
+                group_by_column
+            ).subquery()
+            
+            # Main query to get the rows matching the max_id from the subquery
+            query = session.query(
+                PrayerRequestORM
+            ).join(
+                subquery, subquery.c.max_id == PrayerRequestORM.id
+            ).order_by(
+                PrayerRequestORM.gte_base_embedding.cosine_distance(loadedPrayerRequest.gte_base_embedding)
+            ).limit(5)
+            
             requests = query.all()
             return self._to_prayer_requests(requests)
+        
         
     def avg_linked_topics(self, account_id:int, request_id:int):
         with self.pool() as session:
