@@ -41,7 +41,7 @@ class PrayerRequestORM(Base):
     account: Mapped["AccountORM"] = relationship(back_populates="prayer_requests")
     contact: Mapped["ContactORM"] = relationship(back_populates="prayer_requests")
     link: Mapped["LinkORM"] = relationship(back_populates="prayer_requests")
-    prayer_topics: Mapped["PrayerTopicsORM"] = relationship(back_populates="prayer_request")
+    prayer_topics: Mapped[List["PrayerTopicsORM"]] = relationship(back_populates="prayer_request")
 
 class ContactORM(Base):
     __tablename__ = 'contact'

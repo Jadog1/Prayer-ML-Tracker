@@ -70,7 +70,6 @@ class BibleEmbeddings:
         versesIndex = 0
         for i in range(top_k):
             if sections.scores[i] > 45 and sectionsIndex < 2:
-                print(sections.scores[i])
                 results.append(sections.get_results()[sectionsIndex])
                 sectionsIndex += 1
             else:

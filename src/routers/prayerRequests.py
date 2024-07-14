@@ -108,8 +108,9 @@ class PrayerRequestRoute():
     def find_similar_bible_verses(self, id: int):
         if id == 0:
             raise HTTPException(status_code=400, detail="id cannot be 0")
-        embedding = self.repo.get(account_id, id, include_embeddings=True).embeddings
-        similar = self.bibleModel.search_verses(embedding, 5)
+        similar = self.repo.get_similar_verses(account_id, id)
+        # embedding = self.repo.get(account_id, id, include_embeddings=True).embeddings
+        # similar = self.bibleModel.search_verses(embedding, 5)
         return similar
     
     def link_requests(self, link: LinkBaseModel):

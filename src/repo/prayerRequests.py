@@ -1,9 +1,11 @@
 from abc import ABC, abstractmethod
+
+from src.dto.bibleTopics import BibleTopic, BibleTopics
 from ..dto.prayerRequests import PrayerRequest, PrayerRequests
 from ..dto.topic import Topic, Topics
 from typing import List, Union
 from sqlalchemy.orm import scoped_session, Session
-from .orm import ContactORM, PrayerRequestORM, LinkORM, prayerColumnsExceptEmbeddings, TopicORM, PrayerTopicsORM
+from .orm import BibleTopicORM, BibleTopicsORM, ContactORM, PrayerRequestORM, LinkORM, prayerColumnsExceptEmbeddings, TopicORM, PrayerTopicsORM
 from ..models.models import ClassifierModels, EmbeddingResult, Embeddings
 from sqlalchemy.sql import text
 from sqlalchemy import func, and_, case
@@ -238,7 +240,34 @@ class PrayerRequestRepoImpl(PrayerRequestRepo):
             requests = query.all()
             return self._to_prayer_requests(requests)
         
-        
+    def get_similar_verses(self, account_id:int, request_id:int):
+        with self.pool() as session:
+            query = session.query(
+                BibleTopicORM.id, BibleTopicORM.book, BibleTopicORM.chapter, BibleTopicORM.verse_start, BibleTopicORM.verse_end, BibleTopicORM.content,
+            ).join(
+                BibleTopicsORM, BibleTopicsORM.topic_id == BibleTopicORM.id
+            ).join(
+                TopicORM, TopicORM.id == BibleTopicsORM.topic_id
+            ).join(
+                PrayerTopicsORM, PrayerTopicsORM.topic_id == TopicORM.id
+            ).join(
+                PrayerRequestORM, PrayerRequestORM.id == PrayerTopicsORM.prayer_request_id
+            ).filter(
+                PrayerRequestORM.account_id == account_id,
+                PrayerRequestORM.id == request_id
+            ).group_by(
+                BibleTopicORM.id, BibleTopicORM.book, BibleTopicORM.chapter, BibleTopicORM.verse_start, BibleTopicORM.verse_end, BibleTopicORM.content,
+                BibleTopicORM.gte_base_embedding, PrayerRequestORM.gte_base_embedding
+            ).order_by(
+                BibleTopicORM.gte_base_embedding.cosine_distance(PrayerRequestORM.gte_base_embedding)
+            ).limit(5)
+
+            bibleTopics = query.all()
+            bibleTopicsList = BibleTopics()
+            for bibleTopic in bibleTopics:
+                bibleTopicsList.add(BibleTopic(bibleTopic))
+            return bibleTopicsList
+
     def avg_linked_topics(self, account_id:int, request_id:int):
         with self.pool() as session:
             params = {"account_id": account_id, "request_id": request_id}

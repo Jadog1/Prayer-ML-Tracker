@@ -34,16 +34,16 @@ class BibleVerse {
 class BibleSection {
     public book: string;
     public chapter: number;
-    public start_verse: number;
-    public end_verse: number;
+    public verse_start: number;
+    public verse_end: number;
     public text: string;
     public section_name: string;
 
     constructor() {
         this.book = '';
         this.chapter = 0;
-        this.start_verse = 0;
-        this.end_verse = 0;
+        this.verse_start = 0;
+        this.verse_end = 0;
         this.text = '';
         this.section_name = '';
     }
@@ -52,15 +52,18 @@ class BibleSection {
         const b = new BibleSection();
         b.book = json.book;
         b.chapter = json.chapter;
-        b.start_verse = json.start_verse;
-        b.end_verse = json.end_verse;
+        b.verse_start = json.verse_start;
+        b.verse_end = json.verse_end;
         b.text = json.text;
         b.section_name = json.section_name;
         return b;
     }
 
     public Context(): string {
-        return `${this.book} ${this.chapter}:${this.start_verse}-${this.end_verse}`;
+        if (this.verse_end) 
+            return `${this.book} ${this.chapter}:${this.verse_start}-${this.verse_end}`;
+        else
+            return `${this.book} ${this.chapter}:${this.verse_start}`;
     }
 
     public Text(): string {
@@ -82,7 +85,8 @@ class BibleResults {
 
     public static fromJson(json: any): BibleResults {
         const b = new BibleResults();
-        for (let obj of json) {
+        let topics = json.topics ? json.topics : json;
+        for (let obj of topics) {
             switch (obj.type) {
                 case 'verse':
                     b.results.push(BibleVerse.fromJson(obj));
@@ -90,6 +94,8 @@ class BibleResults {
                 case 'section':
                     b.results.push(BibleSection.fromJson(obj));
                     break;
+                case 'verses':
+
                 default:
                     console.error('Unknown type: ' + obj.type);
                     break;

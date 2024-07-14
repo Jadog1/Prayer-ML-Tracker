@@ -25,6 +25,7 @@ class PrayerRequest():
             self.sentiment = prayerRequest.sentiment_analysis
             self.emotion = prayerRequest.emotion_roberta
             self.prayer_type = prayerRequest.prayer_type
+            self.topics = [pt.topic.name for pt in prayerRequest.prayer_topics ]
             if includeEmbeddings:
                 self.embeddings = EmbeddingResult(prayerRequest.gte_base_embedding, prayerRequest.msmarco_base_embedding)
     
