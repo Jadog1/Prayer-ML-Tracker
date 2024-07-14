@@ -8,6 +8,8 @@
 // As props, it also has id and setId which are used to set the id of the prayer request
 
 import { PrayerRequest, PrayerRequestID } from "../api/prayerRequests";
+import { PrayerSummary } from "../api/prayerSummary";
+import PrayerRequestCard from "./PrayerRequest";
 import TruncateText from "./TruncateText";
 
 type PrayerListProps = {
@@ -59,5 +61,20 @@ function PrayerList(props: PrayerListProps) {
         </div>
     );
 }
+
+function PrayerSummaryList(props: { summary: PrayerSummary }) {
+    return (
+        <div className="p-2 mb-2 space-y-2">
+            {
+                props.summary.prayers.map((prayerRequest: PrayerRequest) => (
+                    <PrayerRequestCard prayerRequest={prayerRequest} showClassification showEmotion
+                        showGroup showName showSentiment showTopics/>
+                ))
+            }
+        </div>
+    )
+}
+
+export { PrayerSummaryList }
 
 export default PrayerList;

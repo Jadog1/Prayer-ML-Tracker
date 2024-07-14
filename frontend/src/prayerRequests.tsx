@@ -2,124 +2,68 @@
 
 import React, { useEffect, useState } from 'react';
 import Header from './components/Header';
-import Sidebar from './components/Sidebar';
+import Sidebar from './pages/PrayerRequestPage/Sidebar';
 import MainContent from './components/MainContent';
 import { PrayerRequest, PrayerRequestID, PrayerRequests } from './api/prayerRequests';
 import ErrorMessage from './components/errorBubble';
 import PrayerList from './components/PrayerList';
 import { PrayerRequestCRUD, PrayerRequestCRUDType } from './util/prayerRequestProperties';
+import PrayerRequestContent from './pages/PrayerRequestPage/prayerRequests';
+import PrayerSummaryContent from './pages/PrayerSummaryPage/prayerSummary';
 
 export type errorHandler = (error: string) => void;
 export const ErrorHandlerContext = React.createContext<errorHandler>((error: string) => { });
+type Pages = 'Prayer Requests' | 'Prayer Summary';
+
+// Page header will have two options, "Prayer Requests" and "Prayer Summary"
+// The user can switch between the two options by clicking on the respective button
+function PageHeader(props: {setPage: (page: Pages) => void}) {
+  const [selected, setSelected] = useState<Pages>('Prayer Requests');
+
+  useEffect(() => {
+    props.setPage(selected);
+  }, [selected]);
+
+  return (
+    <div className="flex justify-between border-b p-2">
+      <div className="flex">
+        <button className={`mr-5 ${selected === 'Prayer Requests' ? 'text-black' : 'text-blue-500'}`}
+          onClick={() => setSelected('Prayer Requests')}>Prayer Requests</button>
+        <button className={`mr-5 ${selected === 'Prayer Summary' ? 'text-black' : 'text-blue-500'}`}
+          onClick={() => setSelected('Prayer Summary')}>Prayer Summary</button>
+      </div>
+      <div className="flex">
+        <button className="bg-blue-500 text-white p-2 rounded">Logout</button>
+      </div>
+    </div>
+  );
+}
 
 function PrayerRequestView() {
   const [errorText, setErrorText] = useState('');
+  const [page, setPage] = useState<Pages>('Prayer Requests');
   const prayerRequestCRUD = PrayerRequestCRUD(setErrorText);
 
   return (
     <ErrorHandlerContext.Provider value={setErrorText}>
+      <PageHeader setPage={setPage}/>
       <div className="container mx-auto p-4">
         {errorText && <ErrorMessage message={errorText} onClose={() => setErrorText("")} />}
-        <div className="flex">
-          <Sidebar setContact={prayerRequestCRUD.properties.setContact} />
-          <PrayerRequestsBody prayerRequestCRUD={prayerRequestCRUD} />
-        </div>
+        <PageHandler page={page} prayerRequestCRUD={prayerRequestCRUD} />
       </div>
     </ErrorHandlerContext.Provider>
   );
 };
 
-
-type PrayerRequestBodyProps = {
-  prayerRequestCRUD: PrayerRequestCRUDType;
+function PageHandler(props: {page: Pages, prayerRequestCRUD: PrayerRequestCRUDType}) {
+  switch (props.page) {
+    case 'Prayer Requests':
+      return <PrayerRequestContent prayerRequestCRUD={props.prayerRequestCRUD} />;
+    case 'Prayer Summary':
+      return <PrayerSummaryContent />;
+  }
 }
-function PrayerRequestsBody(props: PrayerRequestBodyProps) {
-  const [listView, setListView] = useState(true);
-  const [prayerRequests, setPrayerRequests] = useState<PrayerRequests>(new PrayerRequests());
-  const setErrorText = React.useContext(ErrorHandlerContext);
-  const crudProps = props.prayerRequestCRUD.properties;
-  const [disabled, setDisabled] = useState(false);
-
-  useEffect(() => {
-   setDisabled(crudProps.contact.id === 0);
-  }, [crudProps.contact]);
-
-  useEffect(() => {
-    loadPrayerRequests()
-    setListView(true);
-  }, [crudProps.contact]);
-
-  const editRecord = async (id: number) => {
-    try {
-      let pr = await new PrayerRequest().load(id);
-      crudProps.setId(id);
-      crudProps.setPrayerRequest(pr.request);
-      crudProps.setCachedLastSaved(pr);
-      setListView(false);
-    } catch (error: any) {
-      console.error(error);
-      setErrorText(error.message);
-    }
-  }
-
-  const loadPrayerRequests = async () => {
-    try {
-      if (crudProps.contact.id) {
-        let pr = new PrayerRequests()
-        let prayerRequests = await pr.getRequestsForContact(crudProps.contact.id);
-        if (prayerRequests) setPrayerRequests(pr);
-      }
-    } catch (error: any) {
-      console.error(error);
-      setErrorText(error.message);
-    }
-  }
-
-  const deletePrayerRequest = async (pr: PrayerRequest) => {
-    try {
-      await pr.delete();
-      loadPrayerRequests();
-    } catch (error: any) {
-      console.error(error);
-      setErrorText(error.message);
-    }
-  }
-
-  const createNewPrayerRequest = () => {
-    crudProps.setPrayerRequest('');
-    crudProps.setId(0);
-    let result = props.prayerRequestCRUD.save(0, "");
-    if (result != null) setListView(false);
-  }
-
-  const toggleListView = () => {
-    if (!listView) {
-      crudProps.setId(0);
-      loadPrayerRequests();
-    }
-    setListView(!listView);
-  }
-
-  const deletePr = async () => {
-    await props.prayerRequestCRUD.deletePr();
-    toggleListView();
-  }
 
 
-  return (
-    <div className="w-3/4">
-      <Header deletePr={deletePr} disabled={disabled} listView={listView}
-        toggleListView={toggleListView} createNewPrayerRequest={createNewPrayerRequest} 
-        prayerRequestCRUDProps={crudProps}/>
-      {listView ?
-        <PrayerList requests={prayerRequests.requests} id={crudProps.id} editRecord={editRecord}
-          delete={deletePrayerRequest} />
-        :
-        <MainContent prayerRequestCRUD={props.prayerRequestCRUD}
-          disabled={crudProps.id == 0} />
-      }
-    </div>
-  );
-}
 
 export default PrayerRequestView;

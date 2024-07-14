@@ -4,22 +4,28 @@ from src.models.models import EmbeddingResult
 from src.repo.orm import PrayerRequestORM
 
 class PrayerRequest():
-    def __init__(self, prayerRequest: PrayerRequestORM = None, includeEmbeddings: bool = False):
+    def __init__(self, prayerRequest: PrayerRequestORM | dict = None, includeEmbeddings: bool = False):
         if prayerRequest:
             self.id = prayerRequest.id
             self.account_id = prayerRequest.account_id
             self.contact_id = prayerRequest.contact_id
-            self.group_id = prayerRequest.contact.group_id if prayerRequest.contact else None
             self.request = prayerRequest.request
             self.archived_at = prayerRequest.archived_at
-            self.name = prayerRequest.contact.name if prayerRequest.contact else None
-            self.group = prayerRequest.contact.group.name if prayerRequest.contact.group else None
+            if type(prayerRequest.contact) == dict:
+                self.group_id = prayerRequest.contact['group_id'] if prayerRequest.contact else None
+                self.name = prayerRequest.contact['name'] if prayerRequest.contact else None
+                self.group = prayerRequest.contact['group']['name'] if prayerRequest.contact['group'] else None
+            else:
+                self.group_id = prayerRequest.contact.group_id
+                self.name = prayerRequest.contact.name
+                self.group = prayerRequest.contact.group.name
             self.link_id = prayerRequest.link_id
             self.created_at = prayerRequest.created_at
             self.updated_at = prayerRequest.updated_at
             self.sentiment = prayerRequest.sentiment_analysis
             self.emotion = prayerRequest.emotion_roberta
             self.prayer_type = prayerRequest.prayer_type
+            self.topics = [pt.topic.name for pt in prayerRequest.prayer_topics ]
             if includeEmbeddings:
                 self.embeddings = EmbeddingResult(prayerRequest.gte_base_embedding, prayerRequest.msmarco_base_embedding)
     
@@ -76,3 +82,8 @@ class PrayerRequests():
     
     def to_list(self):
         return [prayer.to_dict() for prayer in self.prayerRequests]
+    
+    def from_list(self, data: List[dict]):
+        for prayer in data:
+            self.add(PrayerRequest().from_dict(prayer))
+        return self
