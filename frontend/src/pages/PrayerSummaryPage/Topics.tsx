@@ -10,10 +10,11 @@ function Topics(props: topicProps) {
     return (
         <div className="flex flex-col">
             <p className="text-lg font-semibold mb-2">Topics</p>
-            <div className="flex flex-wrap">
+            <div>
                 {props.summary.topics.TopK(5).map((topic, index) => (
                     <>
-                    <Badge key={index} text={topic.name} color={getColor(index)} />
+                    <Badge key={index} text={topic.name} color={getColor(index)} 
+                        className='mb-2' />
                     <br />
                     </>
                 ))}
