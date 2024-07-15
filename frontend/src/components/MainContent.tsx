@@ -111,7 +111,7 @@ function MainContent(props: MainContentProps) {
       <div className="flex justify-between">
         {prayerCRUDProps.cachedLastSaved != null &&
           <p className="text-sm text-left text-gray-500">
-            {prayerCRUDProps.cachedLastSaved.prayer_type} | {prayerCRUDProps.cachedLastSaved.emotion} | {prayerCRUDProps.cachedLastSaved.sentiment}
+            {prayerCRUDProps.cachedLastSaved.prayer_type} | {prayerCRUDProps.cachedLastSaved.emotion} | {prayerCRUDProps.cachedLastSaved.sentiment} | {prayerCRUDProps.cachedLastSaved.topics.join(', ')}
           </p>}
 
         {updatedTimestamp != '' &&
@@ -178,15 +178,6 @@ function SimilarRequests(props: { prayerRequests: PrayerRequests, existingID: Pr
               }`}
           >
             <div className="flex items-stretch gap-x-1">
-              {prayerRequest.link_id > 0 &&
-                <div
-                  className="flex-none w-3 self-stretch"
-                  style={{
-                    backgroundColor: uniqueLinkIdColors[prayerRequest.link_id],
-                  }}>
-
-                </div>
-              }
               <div className="flex-1">{prayerRequest.request}</div>
             </div>
           </li>

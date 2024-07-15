@@ -48,7 +48,8 @@ class PrayerRequest():
             'updated_at': self.updated_at,
             'sentiment': self.sentiment,
             'emotion': self.emotion,
-            'prayer_type': self.prayer_type
+            'prayer_type': self.prayer_type,
+            'topics': self.topics
         }
     
     def from_dict(self, data: dict)->'PrayerRequest':

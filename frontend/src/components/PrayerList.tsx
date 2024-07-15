@@ -25,6 +25,28 @@ function PrayerList(props: PrayerListProps) {
         }
     }
 
+
+    return (
+        <div className="p-2 mb-2 space-y-2">
+            {
+                props.requests.map((prayerRequest) => {
+                    let children = (
+                        <>
+                            <button onClick={() => props.editRecord(prayerRequest.id)} className="text-blue-500 mb-2 text-xl hover:text-blue-800">
+                                <i className="fa-solid fa-pen-to-square"></i>
+                            </button>
+                            <button onClick={() => deleteRequest(prayerRequest)} className="text-red-500 mb-2 ml-4 text-xl hover:text-red-800">
+                                <i className="fa-solid fa-trash"></i>
+                            </button>
+                        </>
+                    )
+                    return <PrayerRequestCard prayerRequest={prayerRequest} showClassification showEmotion
+                        showSentiment showTopics headerChildren={children} />
+                })
+            }
+        </div>
+    )
+
     return (
         <div className="text-center">
             <table className="w-full h-full overflow-auto">
@@ -68,7 +90,7 @@ function PrayerSummaryList(props: { summary: PrayerSummary }) {
             {
                 props.summary.prayers.map((prayerRequest: PrayerRequest) => (
                     <PrayerRequestCard prayerRequest={prayerRequest} showClassification showEmotion
-                        showGroup showName showSentiment showTopics/>
+                        showGroup showName showSentiment showTopics />
                 ))
             }
         </div>

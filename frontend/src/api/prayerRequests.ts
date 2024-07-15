@@ -92,9 +92,12 @@ class PrayerRequest {
     }
 
     async delete (): Promise<void> {
-        await fetch(`/api/prayer_requests/${this.id}`, {
+        const response = await fetch(`/api/prayer_requests/${this.id}`, {
             method: 'DELETE',
         });
+        if (!response.ok) {
+            throw new Error(`Failed to delete: ${response.statusText}`);
+        }
     }
 
     async load(id: PrayerRequestID): Promise<PrayerRequest> {

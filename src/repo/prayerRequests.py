@@ -103,6 +103,7 @@ class PrayerRequestRepoImpl(PrayerRequestRepo):
             ).label('prayer_number')
 
             # Create the main query with joins and conditions
+            end_date = np.datetime_as_string((np.datetime64(end_date) + np.timedelta64(1, 'D')), unit='D')
             query = session.query(
                 PrayerRequestORM.id,
                 sentiment_case,
@@ -133,6 +134,8 @@ class PrayerRequestRepoImpl(PrayerRequestRepo):
 
     def get_daterange(self, account_id:int, start:str, end:str)->PrayerRequests:
         with self.pool() as session:
+            # Get the date of end and add 1 day
+            end = np.datetime64(end) + np.timedelta64(1, 'D')
             requests = session.query(PrayerRequestORM).filter(
                 PrayerRequestORM.account_id == account_id, 
                 PrayerRequestORM.created_at >= start, PrayerRequestORM.created_at <= end).all()
@@ -205,6 +208,7 @@ class PrayerRequestRepoImpl(PrayerRequestRepo):
 
     def delete(self, account_id:int, id:int):
         with self.pool() as session:
+            session.query(PrayerTopicsORM).filter(PrayerTopicsORM.prayer_request_id == id).delete()
             session.query(PrayerRequestORM).filter(PrayerRequestORM.account_id == account_id, PrayerRequestORM.id == id).delete()
             session.commit()
 
