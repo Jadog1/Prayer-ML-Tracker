@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import Badge from './Badge'; // Import your custom Badge component
 import TruncateText from "./TruncateText";
 import { ErrorHandlerContext } from "../prayerRequests";
+import ReactLoading from "react-loading";
 
 type PrayerOpts = {
     showEmotion?: boolean;
@@ -12,6 +13,7 @@ type PrayerOpts = {
     showName?: boolean;
     showTopics?: boolean;
     headerChildren?: React.ReactNode;
+    showHeaderTabs?: boolean;
 }
 
 type PrayerRequestProps = {
@@ -20,6 +22,7 @@ type PrayerRequestProps = {
 
 const PrayerRequestCard: React.FC<PrayerRequestProps> = ({ prayerRequest, ...opts }) => {
     const [activeTab, setActiveTab] = useState<'prayer' | 'related'>('prayer');
+    const [loadingRelated, setLoadingRelated] = useState(false);
     const setErrorText = React.useContext(ErrorHandlerContext);
 
     const handleTabClick = (tab: 'prayer' | 'related') => {
@@ -29,12 +32,14 @@ const PrayerRequestCard: React.FC<PrayerRequestProps> = ({ prayerRequest, ...opt
     useEffect(() => {
         (async () => {
             if (activeTab === 'related' && prayerRequest.links.length === 0) {
+                setLoadingRelated(true);
                 try {
                     await prayerRequest.getLinks();
                 } catch (error: any) {
                     console.error(error);
                     setErrorText(error.message);
                 }
+                setLoadingRelated(false);
             }
         })()
     }, [activeTab]);
@@ -60,10 +65,23 @@ const PrayerRequestCard: React.FC<PrayerRequestProps> = ({ prayerRequest, ...opt
         </div>
     );
 
+    const renderRelatedContent = () => (
+        <div className="p-4 bg-white rounded-lg md:p-8 dark:bg-gray-800 space-y-2">
+            {prayerRequest.links.map(link => (
+                <div key={link.id}>
+                    <PrayerRequestCard prayerRequest={link} {...opts} showHeaderTabs={false} />
+                </div>
+            ))}
+            {loadingRelated && <ReactLoading type={'spin'} color={'blue'} height={'20%'} width={'20%'} /> }
+        </div>
+    );
+
+    let headerTabsCss = opts.showHeaderTabs === false ? { display: 'none' } : {};
+
     return (
         <div className="w-full bg-white border border-gray-200 rounded-lg shadow dark:bg-gray-800 dark:border-gray-700">
             <div className="text-gray-500 border-b border-gray-200 rounded-t-lg bg-gray-100 dark:border-gray-700 dark:text-gray-400 dark:bg-gray-800 flex">
-                <ul className="flex flex-wrap text-sm font-medium text-center">
+                <ul className="flex flex-wrap text-sm font-medium text-center" style={headerTabsCss} >
                     <li className="me-2">
                         <button
                             onClick={() => handleTabClick('prayer')}
@@ -72,7 +90,7 @@ const PrayerRequestCard: React.FC<PrayerRequestProps> = ({ prayerRequest, ...opt
                             Prayer
                         </button>
                     </li>
-                    <li className="me-2">
+                    <li className="me-2" hidden={prayerRequest.link_id == null}>
                         <button
                             onClick={() => handleTabClick('related')}
                             className={`inline-block p-4 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700 ${activeTab === 'related' ? 'text-blue-600 dark:text-blue-500' : ''}`}
@@ -87,16 +105,8 @@ const PrayerRequestCard: React.FC<PrayerRequestProps> = ({ prayerRequest, ...opt
             </div>
             <div>
                 {activeTab === 'prayer' && renderContent()}
+                {activeTab === 'related' && renderRelatedContent()}
                 {renderFooter()}
-                {activeTab === 'related' && (
-                    <div className="p-4 bg-white rounded-lg md:p-8 dark:bg-gray-800">
-                        {prayerRequest.links.map(link => (
-                            <div key={link.id}>
-                                <PrayerRequestCard prayerRequest={link} {...opts} />
-                            </div>
-                        ))}
-                    </div>
-                )}
             </div>
         </div>
     );

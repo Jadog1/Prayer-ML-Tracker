@@ -46,42 +46,6 @@ function PrayerList(props: PrayerListProps) {
             }
         </div>
     )
-
-    return (
-        <div className="text-center">
-            <table className="w-full h-full overflow-auto">
-                <thead>
-                    <tr>
-                        <th className="text-center">Date</th>
-                        <th className="text-center">Sentiment</th>
-                        <th className="text-center">Prayer Request</th>
-                        <th className="text-center">Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {props.requests.map((prayerRequest) => (
-                        <tr key={prayerRequest.id} className="border-t" style={{ height: '75px' }}>
-                            <td className="p-2">
-                                {new Date(prayerRequest.created_at).toLocaleDateString()}
-                            </td>
-                            <td className="p-2">
-                                {prayerRequest.prayer_type} <br />
-                                {prayerRequest.emotion} <br />
-                                {prayerRequest.sentiment}
-                            </td>
-                            <td className="p-2">
-                                <TruncateText text={prayerRequest.request} limit={100} />
-                            </td>
-                            <td className="p-2 text-right">
-                                <button onClick={() => props.editRecord(prayerRequest.id)} className="text-blue-500 mb-2">Edit</button>
-                                <button onClick={() => deleteRequest(prayerRequest)} className="text-red-500 ml-2">Delete</button>
-                            </td>
-                        </tr>
-                    ))}
-                </tbody>
-            </table>
-        </div>
-    );
 }
 
 function PrayerSummaryList(props: { summary: PrayerSummary }) {

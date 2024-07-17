@@ -103,7 +103,8 @@ class PrayerRequestRepoImpl(PrayerRequestRepo):
             ).label('prayer_number')
 
             # Create the main query with joins and conditions
-            end_date = np.datetime_as_string((np.datetime64(end_date) + np.timedelta64(1, 'D')), unit='D')
+            # Add 2 days to the end date to include the end date in the range. This is a hacky way to do it... come back later and fix
+            end_date = np.datetime_as_string((np.datetime64(end_date) + np.timedelta64(2, 'D')), unit='D')
             query = session.query(
                 PrayerRequestORM.id,
                 sentiment_case,

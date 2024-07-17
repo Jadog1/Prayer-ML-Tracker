@@ -2,11 +2,13 @@
 
 This project uses NLP in a few different ways to automate and assist leading some sort of prayer group / bible study. The idea came from a leadership in a bible study that I lead. The goal is to provide a set of tools to help people track how a person is doing (the ups and the downs), automate following up on prayer requests, provide methods for reminders, and link it all back to the bible.
 
+Under the hood, I have designed everything with React + Typescript as a single page frontend, with Python as a backend, and storing everything in Postgres with the PGVector extension, which allows storing and working with embeddings. I have also used FastAPI as the backend, which is a Python framework that is very fast and easy to use. I have also used Huggingface's transformers library for the NLP models.
+
 As I continue to scope out the prayer request tracking part of this application, I also intend to build a feature suite for building bible studies. This will include additional modeling to include type ahead features and relating scripture back to whatever is being written.
 
 This is still an active work in progress!
 
-To see a demo, visit https://youtu.be/VLOUYgGJo9I
+To see a demo, visit https://www.youtube.com/watch?v=TUhxGmyXxlc
 
 ## Features
 

@@ -9,7 +9,7 @@ class PrayerRequest {
     public contact: Contact;
     public request: string;
     public archived_at: string;
-    public link_id: number;
+    public link_id: number | null;
     public id: PrayerRequestID;
     public created_at: string;
     public updated_at: string;
@@ -127,7 +127,10 @@ class PrayerRequest {
 
     async getLinks(): Promise<PrayerRequest[]> {
         // GetLinks should call the endpoint with the link_id and request_id as query parameters
-        const response = await fetch(`/api/prayer_requests/links?link_id=${this.link_id}&request_id=${this.id}`);
+        if (!this.link_id) {
+            throw new Error('Link ID is required to get links');
+        }
+        const response = await fetch(`/api/prayer_requests/links/?link_id=${this.link_id}&request_id=${this.id}`);
         if (!response.ok) {
             throw new Error(`Failed to fetch: ${response.statusText}`);
         }
