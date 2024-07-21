@@ -129,6 +129,7 @@ class PrayerTopicsORM(Base):
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     topic_id: Mapped[int] = mapped_column(ForeignKey("topic.id"), nullable=False)
     prayer_request_id: Mapped[int] = mapped_column(ForeignKey("prayer_request.id"), nullable=False)
+    score: Mapped[float] = mapped_column(nullable=False)
 
     # Relationships
     topic: Mapped["TopicORM"] = relationship(back_populates="prayer_topics")

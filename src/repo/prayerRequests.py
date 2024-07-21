@@ -186,10 +186,12 @@ class PrayerRequestRepoImpl(PrayerRequestRepo):
         self._build_prayer_topics(session, request_id, embeddings)
 
     def _build_prayer_topics(self, session: Session, request_id, embeddings: EmbeddingResult):
-        query = session.query(TopicORM).order_by(TopicORM.gte_base_embedding.cosine_distance(embeddings.get_gte_base())).limit(5)
+        query = session.query(
+            TopicORM, TopicORM.gte_base_embedding.cosine_distance(embeddings.get_gte_base())
+        ).order_by(TopicORM.gte_base_embedding.cosine_distance(embeddings.get_gte_base())).limit(5)
         topics = query.all()
         for topic in topics:
-            session.add(PrayerTopicsORM(prayer_request_id=request_id, topic_id=topic.id))
+            session.add(PrayerTopicsORM(prayer_request_id=request_id, topic_id=topic[0].id, score=topic[1]))
         
     def link_requests(self, account_id:int, id_from:int, id_to:int):
         with self.pool() as session:
@@ -245,14 +247,11 @@ class PrayerRequestRepoImpl(PrayerRequestRepo):
             requests = query.all()
             return self._to_prayer_requests(requests)
         
+        
     def get_similar_verses(self, account_id:int, request_id:int):
         with self.pool() as session:
-            query = session.query(
-                BibleTopicORM.id, BibleTopicORM.book, BibleTopicORM.chapter, BibleTopicORM.verse_start, BibleTopicORM.verse_end, BibleTopicORM.content,
-            ).join(
-                BibleTopicsORM, BibleTopicsORM.topic_id == BibleTopicORM.id
-            ).join(
-                TopicORM, TopicORM.id == BibleTopicsORM.topic_id
+            cte_top_topics = session.query(
+                TopicORM, PrayerTopicsORM.score, PrayerRequestORM.id.label('prayer_id')
             ).join(
                 PrayerTopicsORM, PrayerTopicsORM.topic_id == TopicORM.id
             ).join(
@@ -260,18 +259,33 @@ class PrayerRequestRepoImpl(PrayerRequestRepo):
             ).filter(
                 PrayerRequestORM.account_id == account_id,
                 PrayerRequestORM.id == request_id
+            ).subquery()
+
+            cte_bible_topic_pairs = session.query(
+                func.sum(cte_top_topics.c.score).label('top_score'),
+                # func.string_agg(cte_top_topics.c.name, ',').label('top_topics'),
+                BibleTopicsORM.bible_topic_id
+            ).join(
+                cte_top_topics, cte_top_topics.c.id == BibleTopicsORM.topic_id
             ).group_by(
-                BibleTopicORM.id, BibleTopicORM.book, BibleTopicORM.chapter, BibleTopicORM.verse_start, BibleTopicORM.verse_end, BibleTopicORM.content,
-                BibleTopicORM.gte_base_embedding, PrayerRequestORM.gte_base_embedding
+                BibleTopicsORM.bible_topic_id
+            ).subquery()
+
+            query = session.query(
+                BibleTopicORM
+            ).join(
+                cte_bible_topic_pairs, BibleTopicORM.id == cte_bible_topic_pairs.c.bible_topic_id
             ).order_by(
-                BibleTopicORM.gte_base_embedding.cosine_distance(PrayerRequestORM.gte_base_embedding)
+                cte_bible_topic_pairs.c.top_score.desc()
             ).limit(5)
 
             bibleTopics = query.all()
             bibleTopicsList = BibleTopics()
             for bibleTopic in bibleTopics:
                 bibleTopicsList.add(BibleTopic(bibleTopic))
+
             return bibleTopicsList
+
 
     def avg_linked_topics(self, account_id:int, request_id:int):
         with self.pool() as session:
