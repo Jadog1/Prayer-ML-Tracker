@@ -8,17 +8,15 @@ class PrayerRequest():
         if prayerRequest:
             self.id = prayerRequest.id
             self.account_id = prayerRequest.account_id
-            self.contact_id = prayerRequest.contact_id
+            self.contact_group_id = prayerRequest.contact_group_id
             self.request = prayerRequest.request
             self.archived_at = prayerRequest.archived_at
-            if type(prayerRequest.contact) == dict:
-                self.group_id = prayerRequest.contact['group_id'] if prayerRequest.contact else None
+            if type(prayerRequest.contact_group) == dict:
+                self.group_id = prayerRequest.contact['groups'] if prayerRequest.contact else None
                 self.name = prayerRequest.contact['name'] if prayerRequest.contact else None
-                self.group = prayerRequest.contact['group']['name'] if prayerRequest.contact['group'] else None
             else:
-                self.group_id = prayerRequest.contact.group_id
-                self.name = prayerRequest.contact.name
-                self.group = prayerRequest.contact.group.name
+                self.groups = prayerRequest.contact_group.group_id
+                self.name = prayerRequest.contact_group.contact.name
             self.link_id = prayerRequest.link_id
             self.created_at = prayerRequest.created_at
             self.updated_at = prayerRequest.updated_at
@@ -60,7 +58,7 @@ class PrayerRequest():
         id = data.get('id')
         self.id = id if id is not None and id > 0 else None
         if data.get('contact'):
-            self.contact_id = data['contact'].get('id')
+            self.contact_group_id = data['contact'].get('id')
             self.name = data['contact'].get('name')
             if data['contact'].get('group'):
                 self.group_id = data['contact']['group'].get('id')

@@ -4,7 +4,7 @@ from ..dto.groups import Group, Groups
 from typing import List
 from sqlalchemy import create_engine
 from sqlalchemy.orm import scoped_session, Session
-from .orm import Base, ContactORM , GroupORM
+from .orm import Base, ContactGroupORM, ContactORM , GroupORM
 
 class ContactRepo(ABC):
     @abstractmethod
@@ -32,11 +32,17 @@ class ContactRepoImpl(ContactRepo):
             contacts = session.query(ContactORM).filter(ContactORM.account_id == account_id).all()
             return self._to_contacts(contacts)
 
-    def save_contact(self, account_id:int, contact: Contact):
+    def save_contact(self, account_id:int, contact: Contact, group_id:int):
         with self.pool() as session:
             contact.account_id = account_id
-            session.add(ContactORM(account_id=contact.account_id, name=contact.name, group_id=contact.group_id))
+            contactOrm = ContactORM(account_id=contact.account_id, name=contact.name, created_at=contact.created_at)
+            session.add(contactOrm)
+            session.flush()
+            if group_id:
+                # Insert a contactGroupORM record if it doesn't already exist for the group/contact pair
+                session.add(ContactGroupORM(contact_id=contactOrm.id, group_id=group_id))
             session.commit()
+
 
     def delete(self, account_id:int, contact_id: int):
         with self.pool() as session:
@@ -54,6 +60,10 @@ class ContactRepoImpl(ContactRepo):
         with self.pool() as session:
             groups = session.query(GroupORM).filter(GroupORM.account_id == account_id).all()
             return self._to_groups(groups)
+        
+    def get_all_contact_groups(self, account_id:int)->List[ContactGroupORM]:
+        with self.pool() as session:
+            return session.query(ContactGroupORM).filter(GroupORM.account_id == account_id).all()
 
     def _to_contacts(self, contacts: List[ContactORM])->Contacts:
         newContacts = Contacts()

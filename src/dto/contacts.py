@@ -10,6 +10,7 @@ class Contact():
             self.name = contact.name
             self.group_id = contact.group_id
             self.group = contact.group.name if contact.group else None
+            self.created_at = contact.created_at
     
     def to_dict(self):
         return {
@@ -19,12 +20,14 @@ class Contact():
                 'id': self.group_id, 
                 'name': self.group},
             'id': self.id,
+            'created_at': self.created_at
         }
     
     def from_dict(self, data: dict)->'Contact':
         self.account_id = data.get('account_id')
         self.name = data.get('name')
         self.id = data.get('id')
+        self.created_at = data.get('created_at')
         if data.get('group'):
             self.group_id = data['group'].get('id')
             self.group = data['group'].get('name')

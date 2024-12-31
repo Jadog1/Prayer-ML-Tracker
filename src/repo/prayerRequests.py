@@ -5,7 +5,7 @@ from ..dto.prayerRequests import PrayerRequest, PrayerRequests
 from ..dto.topic import Topic, Topics
 from typing import List, Union
 from sqlalchemy.orm import scoped_session, Session
-from .orm import BibleTopicORM, BibleTopicsORM, ContactORM, PrayerRequestORM, LinkORM, prayerColumnsExceptEmbeddings, TopicORM, PrayerTopicsORM
+from .orm import BibleTopicORM, BibleTopicsORM, ContactGroupORM, ContactORM, PrayerRequestORM, LinkORM, prayerColumnsExceptEmbeddings, TopicORM, PrayerTopicsORM
 from ..models.models import ClassifierModels, EmbeddingResult, Embeddings
 from sqlalchemy.sql import text
 from sqlalchemy import func, and_, case
@@ -116,7 +116,7 @@ class PrayerRequestRepoImpl(PrayerRequestRepo):
             
             # Add the group_id filter conditionally
             if group_id is not None:
-                query = query.join(PrayerRequestORM.contact).filter(ContactORM.group_id == group_id)
+                query = query.join(PrayerRequestORM.contact).filter(ContactGroupORM.group_id == group_id)
             
             # Use subquery to mimic the CTE
             subquery = query.subquery()
@@ -146,7 +146,7 @@ class PrayerRequestRepoImpl(PrayerRequestRepo):
         with self.pool() as session:
             request.account_id = account_id
             ormRequest = PrayerRequestORM(
-                id=request.id, account_id=account_id, contact_id=request.contact_id, 
+                id=request.id, account_id=account_id, contact_group_id=request.contact_group_id, 
                 request=request.request, archived_at=request.archived_at)
             self._set_embeddings(ormRequest)
             # if request.request != "":

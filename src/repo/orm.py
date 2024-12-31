@@ -25,21 +25,21 @@ class PrayerRequestORM(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     account_id: Mapped[int] = mapped_column(ForeignKey("account.id"), nullable=False)
-    request: Mapped[str] = mapped_column(String(collation='pg_catalog."default"'), nullable=False)
+    request: Mapped[str] = mapped_column(String(), nullable=False)
     created_at: Mapped[datetime.datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.current_timestamp())
     updated_at: Mapped[datetime.datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.current_timestamp())
-    contact_id: Mapped[int] = mapped_column(ForeignKey("contact.id"), nullable=False)
-    archived_at: Mapped[datetime.datetime] = mapped_column(DateTime(timezone=True))
+    archived_at: Mapped[datetime.datetime] = mapped_column(DateTime(timezone=True), nullable=True)
     link_id: Mapped[int] = mapped_column(ForeignKey("link.id"), nullable=True)
     gte_base_embedding: Mapped[Vector] = mapped_column(Vector(768), nullable=True)
     msmarco_base_embedding: Mapped[Vector] = mapped_column(Vector(768), nullable=True)
-    prayer_type: Mapped[str] = mapped_column(String(collation='pg_catalog."default"'),nullable=True)
-    sentiment_analysis: Mapped[str] = mapped_column(String(collation='pg_catalog."default"'),nullable=True)
-    emotion_roberta: Mapped[str] = mapped_column(String(collation='pg_catalog."default"'),nullable=True)
+    prayer_type: Mapped[str] = mapped_column(String(),nullable=True)
+    sentiment_analysis: Mapped[str] = mapped_column(String(),nullable=True)
+    emotion_roberta: Mapped[str] = mapped_column(String(),nullable=True)
+    contact_group_id: Mapped[int] = mapped_column(ForeignKey("contact_prayer_groups.id"), nullable=False)
 
     # Foreign key relationships
     account: Mapped["AccountORM"] = relationship(back_populates="prayer_requests")
-    contact: Mapped["ContactORM"] = relationship(back_populates="prayer_requests")
+    contact_group: Mapped["ContactGroupORM"] = relationship(back_populates="prayer_requests")
     link: Mapped["LinkORM"] = relationship(back_populates="prayer_requests")
     prayer_topics: Mapped[List["PrayerTopicsORM"]] = relationship(back_populates="prayer_request")
 
@@ -47,21 +47,33 @@ class ContactORM(Base):
     __tablename__ = 'contact'
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    name: Mapped[str] = mapped_column(String(collation='pg_catalog."default"'), nullable=False)
-    description: Mapped[str] = mapped_column(String(collation='pg_catalog."default"'), nullable=True)
+    name: Mapped[str] = mapped_column(String(), nullable=False)
+    description: Mapped[str] = mapped_column(String(), nullable=True)
     account_id: Mapped[int] = mapped_column(ForeignKey("account.id"), nullable=False)
-    group_id: Mapped[int] = mapped_column(ForeignKey("contact_group.id"), nullable=True)
+    created_at: Mapped[datetime.datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.current_timestamp())
 
     # Relationships
-    prayer_requests: Mapped[List["PrayerRequestORM"]] = relationship(back_populates="contact")
     account: Mapped["AccountORM"] = relationship(back_populates="contacts")
+    contact_group: Mapped[List["ContactGroupORM"]] = relationship(back_populates="contact")
+
+class ContactGroupORM(Base):
+    __tablename__ = 'contact_prayer_groups'
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    contact_id: Mapped[int] = mapped_column(ForeignKey("contact.id"), nullable=False)
+    group_id: Mapped[int] = mapped_column(ForeignKey("prayer_group.id"), nullable=False)
+    created_at: Mapped[datetime.datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.current_timestamp())
+
+    # Relationships
+    contact: Mapped["ContactORM"] = relationship(back_populates="contact_group")
     group: Mapped["GroupORM"] = relationship(back_populates="contacts")
+    prayer_requests: Mapped["PrayerRequestORM"] = relationship(back_populates="contact_group")
 
 class AccountORM(Base):
     __tablename__ = 'account'
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    name: Mapped[str] = mapped_column(String(collation='pg_catalog."default"'), nullable=False)
+    name: Mapped[str] = mapped_column(String(), nullable=False)
 
     # Relationships
     prayer_requests: Mapped[List["PrayerRequestORM"]] = relationship(back_populates="account")
@@ -69,15 +81,15 @@ class AccountORM(Base):
     groups: Mapped[List["GroupORM"]] = relationship(back_populates="account")
 
 class GroupORM(Base):
-    __tablename__ = 'contact_group'
+    __tablename__ = 'prayer_group'
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    name: Mapped[str] = mapped_column(String(collation='pg_catalog."default"'), nullable=False)
+    name: Mapped[str] = mapped_column(String(), nullable=False)
     account_id: Mapped[int] = mapped_column(ForeignKey("account.id"), nullable=False)
 
     # Relationships
     account: Mapped["AccountORM"] = relationship(back_populates="groups")
-    contacts: Mapped[List["ContactORM"]] = relationship(back_populates="group")
+    contacts: Mapped[List["ContactGroupORM"]] = relationship(back_populates="group")
 
 class LinkORM(Base):
     __tablename__ = 'link'
@@ -91,11 +103,11 @@ class BibleTopicORM(Base):
     __tablename__ = 'bible_topic'
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    book: Mapped[str] = mapped_column(String(collation='pg_catalog."default"'), nullable=False)
+    book: Mapped[str] = mapped_column(String(), nullable=False)
     chapter: Mapped[int] = mapped_column(nullable=False)
     verse_start: Mapped[int] = mapped_column(nullable=False)
     verse_end: Mapped[int] = mapped_column(nullable=False)
-    content: Mapped[str] = mapped_column(String(collation='pg_catalog."default"'), nullable=False)
+    content: Mapped[str] = mapped_column(String(), nullable=False)
     gte_base_embedding: Mapped[Vector] = mapped_column(Vector(768), nullable=False)
 
     # Relationships
