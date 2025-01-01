@@ -68,8 +68,8 @@ class PrayerRequestRepoImpl(PrayerRequestRepo):
 
     def get_contact(self, account_id:int, contact_id: int)->PrayerRequests:
         with self.pool() as session:
-            requests = session.query(PrayerRequestORM).filter(
-                PrayerRequestORM.account_id == account_id, PrayerRequestORM.contact_id == contact_id
+            requests = session.query(PrayerRequestORM).join(ContactGroupORM).filter(
+                PrayerRequestORM.account_id == account_id, ContactGroupORM.contact_id == contact_id
                 ).order_by(PrayerRequestORM.created_at.desc()).all()
             return self._to_prayer_requests(requests)
         

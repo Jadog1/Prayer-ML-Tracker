@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from ..dto.contacts import Contacts, Contact
+from ..dto.contacts import ContactGroup, ContactGroups, Contacts, Contact
 from ..dto.groups import Group, Groups
 from typing import List
 from sqlalchemy import create_engine
@@ -61,9 +61,10 @@ class ContactRepoImpl(ContactRepo):
             groups = session.query(GroupORM).filter(GroupORM.account_id == account_id).all()
             return self._to_groups(groups)
         
-    def get_all_contact_groups(self, account_id:int)->List[ContactGroupORM]:
+    def get_all_contact_groups(self, account_id:int)->ContactGroups:
         with self.pool() as session:
-            return session.query(ContactGroupORM).filter(GroupORM.account_id == account_id).all()
+            contactGroups = session.query(ContactGroupORM).filter(GroupORM.account_id == account_id).all()
+            return self._to_contact_groups(contactGroups)
 
     def _to_contacts(self, contacts: List[ContactORM])->Contacts:
         newContacts = Contacts()
@@ -77,3 +78,8 @@ class ContactRepoImpl(ContactRepo):
             newGroups.add(Group(group))
         return newGroups
 
+    def _to_contact_groups(self, contactGroups: List[ContactGroupORM])->ContactGroups:
+        newContactGroups = ContactGroups()
+        for contactGroup in contactGroups:
+            newContactGroups.add(ContactGroup(contactGroup))
+        return newContactGroups

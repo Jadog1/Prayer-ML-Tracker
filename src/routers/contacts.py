@@ -26,7 +26,7 @@ class ContactRoute():
         return results.to_list()
 
     def get_contact_groups(self):
-        results = self.repo.get_contact_groups(account_id)
+        results = self.repo.get_all_contact_groups(account_id)
         return results.to_list()
     
     def add_contact(self, data: dict):

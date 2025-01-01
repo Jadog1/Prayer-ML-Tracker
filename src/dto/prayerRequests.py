@@ -1,5 +1,6 @@
 from typing import List
 import pandas as pd
+from src.dto.contacts import Contact
 from src.models.models import EmbeddingResult
 from src.repo.orm import PrayerRequestORM
 
@@ -12,11 +13,10 @@ class PrayerRequest():
             self.request = prayerRequest.request
             self.archived_at = prayerRequest.archived_at
             if type(prayerRequest.contact_group) == dict:
-                self.group_id = prayerRequest.contact['groups'] if prayerRequest.contact else None
-                self.name = prayerRequest.contact['name'] if prayerRequest.contact else None
+                self.name = prayerRequest.contact_group.contact['name'] if prayerRequest.contact_group else None
+                self.contact_id = prayerRequest.contact_group.contact['id'] if prayerRequest.contact_group else None
             else:
-                self.groups = prayerRequest.contact_group.group_id
-                self.name = prayerRequest.contact_group.contact.name
+                self.contact = Contact(prayerRequest.contact_group.contact).to_dict()
             self.link_id = prayerRequest.link_id
             self.created_at = prayerRequest.created_at
             self.updated_at = prayerRequest.updated_at
@@ -30,14 +30,7 @@ class PrayerRequest():
     def to_dict(self):
         return {
             'account_id': self.account_id,
-            'contact': {
-                'id': self.contact_id,
-                'name': self.name,
-                'group': {
-                    'id': self.group_id,
-                    'name': self.group
-                }
-            },
+            'contact': self.contact,
             'request': self.request,
             'archived_at': self.archived_at,
             'link_id': self.link_id,
@@ -60,9 +53,6 @@ class PrayerRequest():
         if data.get('contact'):
             self.contact_group_id = data['contact'].get('id')
             self.name = data['contact'].get('name')
-            if data['contact'].get('group'):
-                self.group_id = data['contact']['group'].get('id')
-                self.group = data['contact']['group'].get('name')
         return self
 
 class PrayerRequests():
