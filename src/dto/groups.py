@@ -8,18 +8,21 @@ class Group():
             self.account_id = group.account_id
             self.name = group.name
             self.id = group.id
+            self.description = group.description
     
     def to_dict(self):
         return {
             'account_id': self.account_id,
             'name': self.name,
-            'id': self.id
+            'id': self.id,
+            'description': self.description
         }
     
     def from_dict(self, data: dict)->'Group':
         self.account_id = data.get('account_id')
         self.name = data.get('name')
         self.id = data.get('id')
+        self.description = data.get('description')
         return self
     
 class Groups():
